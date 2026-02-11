@@ -62,3 +62,13 @@
 - Keep changes small and layered (vertical slices).
 - No invented payloads, no assumed endpoints: always align with OpenAPI.
 - Prefer explicit and readable naming. Avoid magic abstractions.
+
+## Minimal “vertical slice” template (how to build features)
+
+For any feature:
+- Update contracts/openapi.yaml
+- Add/adjust domain types/rules (if needed)
+- Add application DTOs + port(s) + use-case
+- Implement infrastructure adapters (repo/gateway)
+- Add interface route + controller + presenter
+- Wire in container.ts
