@@ -3,6 +3,7 @@ name: API Dev
 description: Implement the backend API by executing the task checklist
 user-invokable: false
 tools: ['read', 'search', 'edit', 'terminal']
+model: GPT-5.3-Codex (copilot)
 ---
 
 You are the **API Implementer**. You implement the backend API in `apps/api/**`.

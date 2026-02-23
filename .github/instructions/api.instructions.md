@@ -63,7 +63,61 @@
 - No invented payloads, no assumed endpoints: always align with OpenAPI.
 - Prefer explicit and readable naming. Avoid magic abstractions.
 
-## Minimal “vertical slice” template (how to build features)
+## Layer responsibilities (detailed)
+
+### Domain (`src/domain`)
+What lives here:
+- **Entities**: objects with identity and invariants.
+- **Value Objects**: immutable types with validation (Money, Email, Coordinates, etc.).
+- **Policies**: pure rule checks (e.g., "can user perform X?") with no IO.
+- **Domain events**: facts that happened (e.g., ReceiptParsed, ParcelListed).
+- **Domain errors**: invariant violations, invalid state transitions.
+- **Repository interfaces** (optional): only if they truly belong to domain (rare). Prefer application ports.
+
+What must **NOT** live here:
+- HTTP, DB, messaging, environment, system dates ("now") unless passed in.
+
+### Application (`src/application`)
+What lives here:
+- **Use-cases**: orchestration of domain + ports; transaction boundaries. Accept DTOs and return DTOs or typed results.
+- **Ports** (interfaces):
+  - `ports/repositories/` — write models
+  - `ports/read-models/` — query models optimized for reads
+  - `ports/gateways/` — external systems (OpenAI, geocoders, payments, etc.)
+- **DTOs**: use-case request/response shapes.
+- **Application errors**: failures at orchestration/port boundaries.
+
+Rules:
+- Use-cases depend only on ports, never on concrete DB/client implementations.
+
+### Infrastructure (`src/infrastructure`)
+What lives here:
+- Concrete implementations of application ports (Postgres repos + read models, HTTP clients / SDK wrappers, messaging producers/consumers).
+- Config loading and env validation (`config/`).
+- Observability: logger, tracing, metrics (`observability/`).
+
+Rules:
+- DB code lives here only. Use `pg.Pool` (or equivalent) injected from DI container.
+- Infrastructure objects must satisfy the port interfaces defined by application.
+
+### Interfaces (`src/interfaces`)
+What lives here:
+- HTTP: routes (register only), controllers (parse/validate + call use-case), presenters (shape response), middlewares (auth, request-id, input validation wrappers).
+- CLI commands (optional).
+- Consumers for messaging (optional) — they call use-cases.
+
+Rules:
+- No business rules here. No DB queries here.
+- Controllers call use-cases and pass DTOs.
+
+## Naming conventions
+
+- Use-case files: `verb-noun.usecase.ts` (e.g., `get-health.usecase.ts`)
+- DTO types: `XxxRequest`, `XxxResponse`
+- Port interfaces: `XxxRepository`, `XxxReadModel`, `XxxGateway`
+- Infrastructure implementations: `PostgresXxxRepository`, `HttpXxxGateway`
+
+## Minimal "vertical slice" template (how to build features)
 
 For any feature:
 - Update contracts/openapi.yaml
@@ -72,3 +126,10 @@ For any feature:
 - Implement infrastructure adapters (repo/gateway)
 - Add interface route + controller + presenter
 - Wire in container.ts
+
+## Definition of "done"
+
+- Contract exists in `contracts/openapi.yaml`
+- The route is implemented and runnable
+- DI wiring is in place
+- The feature follows the layer boundaries above
