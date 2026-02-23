@@ -3,9 +3,20 @@
 ## Scope
 These instructions apply to `apps/web/**` only.
 
-## Stack
+## Stack (platform-dependent)
+The platform is defined in `docs/spec.md` under `## Platform`:
+
+### Mobile
 - React Native (Expo) + TypeScript
 - React Navigation for routing
+- AsyncStorage for persistence
+
+### Web
+- React + Next.js (App Router) + TypeScript
+- `next/navigation` and `next/link` for routing
+- Cookies/localStorage for persistence
+- Server components where possible, `'use client'` only when needed
+- Tailwind CSS or CSS modules for styling
 
 ## Frontend architecture: Feature-Sliced (FSD)
 Use a Feature-Sliced structure under `apps/web/src`:

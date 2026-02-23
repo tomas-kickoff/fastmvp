@@ -1,7 +1,11 @@
 # Copilot Instructions (fastmvp)
 
 ## Big picture
-- Monorepo with API and Web apps: `apps/api` (Fastify + TS, Clean/DDD) and `apps/web` (Expo React Native + TS, Feature-Sliced).
+- Monorepo with API and Web apps: `apps/api` (Fastify + TS, Clean/DDD) and `apps/web` (frontend, stack depends on `## Platform` in `docs/spec.md`).
+- Supported frontend platforms:
+  - `web`: React + Next.js (App Router) + TypeScript
+  - `mobile`: React Native (Expo) + TypeScript
+  - `both`: both stacks sharing `contracts/` and API client
 - API surface is defined by `contracts/openapi.yaml`. Both API and Web must align with it; update the contract first when adding fields/endpoints.
 
 ## API architecture (apps/api)
@@ -14,8 +18,13 @@
 
 ## Web architecture (apps/web)
 - Feature-Sliced structure under `apps/web/src`: `app`, `pages`, `widgets`, `features`, `entities`, `shared`.
+- Platform is defined in `docs/spec.md` under `## Platform`:
+  - `mobile`: React Native (Expo) + React Navigation
+  - `web`: React + Next.js (App Router) — `app/` directory doubles as Next.js routes
 - Data fetching only in `features/**/model/*` or `entities/**/model/*` via `shared/lib/api/*`. No direct `fetch`/`axios` in pages/widgets/shared UI.
-- UI primitives use `app/theme/tokens.ts` (no ad-hoc styling). Route names live in `app/navigation/routes.ts`, types in `shared/types/navigation.ts`.
+- UI primitives use `app/theme/tokens.ts` (no ad-hoc styling).
+- Mobile: route names in `app/navigation/routes.ts`, types in `shared/types/navigation.ts`.
+- Web: routes defined by Next.js file system, navigation types in `shared/types/navigation.ts`.
 
 ## Workflows and commands
 - From repo root: `npm install` then `npm run dev` to run API (Fastify on http://localhost:3000).

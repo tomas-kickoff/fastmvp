@@ -1,51 +1,94 @@
-# fastmvp workflow (quick)
+# fastmvp workflow
 
 This repo is a **monorepo MVP factory**:
 - `apps/api` = backend (Fastify + Clean Architecture + DDD + DI)
 - `apps/web` = frontend (React Native Expo + Feature-Sliced)
 - `contracts/openapi.yaml` = **the boundary** (source of truth)
 
-## How to run the flow (Copilot prompt files)
+## Agents (recommended)
 
-### 0) (Optional) Constitution
-**Prompt:** `.github/prompts/fastmvp.constitution.prompt.md`  
-**Output:** `.github/copilot-instructions.md`  
-Use only to refresh repo rules.
+Custom agents in `.github/agents/` orchestrate the full workflow. Select an agent from the Copilot agents dropdown.
 
-### 1) Specify
-**Prompt:** `.github/prompts/fastmvp.specify.prompt.md`  
-**Input:** your idea (text)  
-**Output:** `docs/spec.md` (MVP scope, flows, screens, conceptual data model, acceptance criteria)
+### FastMVP — Build a new MVP
+**Agent:** `FastMVP` (in agents dropdown)
+**Input:** your idea (text)
+**What it does:** Runs the full pipeline automatically via subagents:
 
-### 2) Contracts
-**Prompt:** `.github/prompts/fastmvp.contracts.prompt.md`  
-**Input:** `#docs/spec.md` update openapi.yaml and create db file if neccesary
-**Output:** `contracts/openapi.yaml` (+ optional DB SQL if needed)
+```
+Specifier → Contract → API Planner + Designer (parallel)
+  → API Dev → Web Planner → Web Dev → Reviewer
+```
 
-### 3) Tasks (API)
-**Prompt:** `.github/prompts/fastmvp.tasks-api.prompt.md`  
-**Inputs:** `#docs/spec.md` + `#contracts/openapi.yaml`  
-**Output:** `docs/tasks-api.md`
+**Outputs:**
+- `docs/spec.md` — product spec
+- `contracts/openapi.yaml` — API contract (+ optional `contracts/db/*.sql`)
+- `docs/figma.md` — Figma Make prompts + data mapping
+- `docs/tasks-api.md` — API checklist (completed)
+- `docs/tasks-web.md` — Web checklist (completed)
+- `apps/api/**` — implemented backend
+- `apps/web/**` — implemented frontend
 
-### 4) Implement (API)
-**Prompt:** `.github/prompts/fastmvp.implement-api.prompt.md`  
-**Inputs:** `#contracts/openapi.yaml` + `#docs/tasks-api.md`  
-**Output:** `apps/api/**` + updates checkboxes in `docs/tasks-api.md`
+After completion, handoff buttons appear: **[Add a Feature]** **[Fix a Bug]**
 
-### 5) Figma prompts (optional)
-**Prompt:** `.github/prompts/fastmvp.figma-prompt.prompt.md`  
-**Inputs:** `#docs/spec.md` + `#contracts/openapi.yaml`  
-**Output:** `docs/figma.md` (screen prompts + screen→endpoint mapping)
+### Feature Builder — Add a feature
+**Agent:** `Feature Builder` (in agents dropdown)
+**Input:** feature description
+**What it does:** Reads existing spec/contract/code, then incrementally:
+- Appends to spec, updates contract, plans + implements only the new feature
+- Never rewrites existing code — only adds
 
-### 6) Tasks (Web)
-**Prompt:** `.github/prompts/fastmvp.tasks-web.prompt.md`  
-**Inputs:** `#docs/spec.md` + `#contracts/openapi.yaml` + `#docs/figma.md`  
-**Output:** `docs/tasks-web.md`
+### Bug Fixer — Fix a bug
+**Agent:** `Bug Fixer` (in agents dropdown)
+**Input:** bug description
+**What it does:** Diagnoses, locates root cause, classifies (API/Web/contract), fixes, and validates.
 
-### 7) Implement (Web)
-**Prompt:** `.github/prompts/fastmvp.implement-web.prompt.md`  
-**Inputs:** `#contracts/openapi.yaml` + `#docs/tasks-web.md` (+ `#docs/figma.md` if used)  
-**Output:** `apps/web/**` + updates checkboxes in `docs/tasks-web.md`
+## Agent architecture
+
+```
+.github/agents/
+  ├── fastmvp.agent.md          # Orchestrator: new MVP (user-invokable)
+  ├── feature-builder.agent.md  # Orchestrator: add feature (user-invokable)
+  ├── bug-fixer.agent.md        # Orchestrator: fix bugs (user-invokable)
+  ├── specifier.agent.md        # Worker: idea → spec
+  ├── contract.agent.md         # Worker: spec → openapi + SQL
+  ├── api-planner.agent.md      # Worker: spec + openapi → tasks-api
+  ├── api-dev.agent.md          # Worker: implements API
+  ├── designer.agent.md          # Worker: spec + openapi → figma prompts + tokens
+  ├── design-integrator.agent.md # Orchestrator: Figma Make code → integrated frontend
+  ├── web-planner.agent.md      # Worker: spec + openapi + figma → tasks-web
+  ├── web-dev.agent.md          # Worker: implements Web
+  └── reviewer.agent.md         # Worker: validates contract ↔ code alignment
+```
+
+Workers have `user-invokable: false` — they only run as subagents, not from the dropdown.
+
+## Figma integration
+
+### During MVP creation (automatic)
+1. **Designer** agent generates `docs/figma.md` with prompts for Figma Make
+2. Pipeline continues — Web Dev implements a functional frontend without waiting for Figma
+
+### After MVP creation (optional, for polished UI)
+3. Copy screen prompts from `docs/figma.md` into **Figma Make**
+4. Figma Make generates React code per screen
+5. Save each screen's code to `resources/figma/screens/<ScreenName>.tsx`
+6. Select **Design Integrator** agent (or click the handoff button) → it integrates the Figma code into `apps/web/src/`:
+   - Maps hardcoded styles → design tokens
+   - Extracts reusable components → `shared/ui/`
+   - Wires real API data (replaces placeholders)
+   - Respects Feature-Sliced architecture
+
+### Token sync (optional)
+- Export tokens via [Tokens Studio](https://tokens.studio/) → `resources/figma/tokens.json`
+- Web Dev and Design Integrator auto-detect and use them
+
+## Legacy prompt files
+
+The original prompt files in `.github/prompts/` still work for manual step-by-step execution. See each file for inputs/outputs. The agents are the recommended approach.
+
+### 0) Constitution (maintenance)
+**Prompt:** `.github/prompts/fastmvp.constitution.prompt.md`
+**Output:** `.github/copilot-instructions.md`
 
 ## Non-negotiables
 - **OpenAPI is the boundary:** no invented endpoints/payloads on API or Web.
