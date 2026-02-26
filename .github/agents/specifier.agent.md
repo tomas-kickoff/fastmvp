@@ -44,7 +44,7 @@ If instructed to append a feature to an existing spec:
 - `apps/api`: Fastify + TypeScript (Clean Architecture + DDD + DI)
 - `apps/web`: frontend app (see Platform section below)
 - `contracts/openapi.yaml`: contract boundary
-- Database: SQL files only, no migrations, no local Postgres (`contracts/db/`)
+- Database: SQL files only, no migrations, no local Postgres (`contracts/db/`). Incremental changes use new files (e.g., `003_add_feature.sql`).
 
 ## Platform detection (critical)
 The spec MUST define the frontend platform. Determine it from the user's input:

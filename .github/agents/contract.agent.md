@@ -26,7 +26,7 @@ If there is an existing `contracts/openapi.yaml`:
 - Read it first.
 - **Add** new endpoints/schemas required by the feature.
 - Do NOT remove or change existing endpoints unless the feature explicitly modifies them.
-- If adding to DB schema, append to `contracts/db/schema.sql` (ALTER TABLE or new CREATE TABLE).
+- If adding to DB schema, do NOT modify existing SQL files (like `001_schema.sql`). Instead, create a new incremental SQL file (e.g., `contracts/db/003_add_feature.sql`) with `ALTER TABLE` or new `CREATE TABLE` statements.
 
 ## Inputs
 - `docs/spec.md` (required)

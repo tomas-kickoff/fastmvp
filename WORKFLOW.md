@@ -90,6 +90,11 @@ The original prompt files in `.github/prompts/` still work for manual step-by-st
 **Prompt:** `.github/prompts/fastmvp.constitution.prompt.md`
 **Output:** `.github/copilot-instructions.md`
 
+## Coming Soon (Roadmap)
+- **Documentation Agents**: Automated generation and maintenance of project documentation.
+- **CI/CD Agents**: Controlled, step-by-step releases to production environments.
+- **Multi-language Skills**: Agents equipped with skills for different programming languages beyond the current stack.
+
 ## Non-negotiables
 - **OpenAPI is the boundary:** no invented endpoints/payloads on API or Web.
 - **API uses DDD + DI:** wiring happens only in `apps/api/src/app/container.ts`.

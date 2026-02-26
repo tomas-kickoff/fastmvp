@@ -1,7 +1,7 @@
 ---
 name: Feature Builder
 description: Add a feature to an existing MVP — incremental spec, contract update, and implementation
-tools: ['agent', 'read', 'search']
+tools: [read/getNotebookSummary, read/problems, read/readFile, read/readNotebookCellOutput, read/terminalSelection, read/terminalLastCommand, agent/runSubagent, edit/createDirectory, edit/createFile, edit/createJupyterNotebook, edit/editFiles, edit/editNotebook, search/changes, search/codebase, search/fileSearch, search/listDirectory, search/searchResults, search/textSearch, search/usages, memory]
 agents: ['Specifier', 'Contract', 'API Planner', 'API Dev', 'Designer', 'Web Planner', 'Web Dev', 'Reviewer']
 handoffs:
   - label: Integrate Figma Designs
@@ -71,6 +71,9 @@ Run the **Reviewer** agent as a subagent to validate:
 - New feature aligns with updated `contracts/openapi.yaml`
 - Existing functionality is not broken
 - No contract drift in pre-existing endpoints
+
+### Phase 9 — Changelog
+Update the `CHANGELOG.md` file (create it if it doesn't exist) with a new entry describing the feature that was just added. Include the date and a brief summary of the changes made to the API, Web, and contracts.
 
 ## Rules
 - **Incremental, not destructive**: never rewrite existing spec/contract/tasks — append or surgically update.

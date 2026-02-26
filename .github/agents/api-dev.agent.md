@@ -51,7 +51,7 @@ Authoritative layout:
 
 ## Database policy
 - No Prisma, no migrations.
-- SQL tracked in `contracts/db/*` for manual execution.
+- SQL tracked in `contracts/db/*` for manual execution. When making changes, do NOT modify existing SQL files (like `001_schema.sql`). Instead, create new incremental SQL files (e.g., `003_add_feature.sql`) with `ALTER TABLE` or new `CREATE TABLE` statements.
 - Use `pg` (`Pool`) injected via DI.
 
 ## Execution protocol (checklist-driven)

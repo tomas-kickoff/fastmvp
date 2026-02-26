@@ -1,7 +1,8 @@
 ---
 name: FastMVP
 description: Build a complete MVP from an idea — spec, contracts, API, design, and frontend
-tools: ['agent', 'read', 'search']
+tools: [vscode/getProjectSetupInfo, vscode/installExtension, vscode/newWorkspace, vscode/openSimpleBrowser, vscode/runCommand, vscode/askQuestions, vscode/vscodeAPI, vscode/extensions, execute/killTerminal, read/getNotebookSummary, read/problems, read/readFile, read/readNotebookCellOutput, read/terminalSelection, read/terminalLastCommand, agent/runSubagent, edit/createDirectory, edit/createFile, edit/createJupyterNotebook, edit/editFiles, edit/editNotebook, search/changes, search/codebase, search/fileSearch, search/listDirectory, search/searchResults, search/textSearch, search/usages, web/fetch, web/githubRepo, memory, todo]
+model: Gemini 3.1 Pro (Preview) (copilot)
 agents: ['Specifier', 'Contract', 'API Planner', 'API Dev', 'Designer', 'Web Planner', 'Web Dev', 'Reviewer']
 handoffs:
   - label: Integrate Figma Designs
@@ -67,12 +68,15 @@ Run the **Reviewer** agent as a subagent.
 - Input: reads `contracts/openapi.yaml` + implemented code
 - Output: alignment report (issues found or confirmation)
 
+### Phase 8 — Changelog
+Initialize the `CHANGELOG.md` file with the first entry describing the initial MVP creation. Include the date and a brief summary of the MVP.
+
 ## Rules
 - Follow the pipeline order strictly.
 - If any subagent reports a BLOCKED task, stop the pipeline and report it to the user with the reason.
 - Do not invent scope beyond what the user described.
 - `contracts/openapi.yaml` is the boundary between API and Web — both must align with it.
-- After Phase 7, provide a concise summary of what was built and any open items.
+- After Phase 8, provide a concise summary of what was built and any open items.
 
 ## Platform awareness
 After Phase 1, read the `## Platform` section of `docs/spec.md` to determine the frontend stack:

@@ -3,7 +3,7 @@ name: Reviewer
 description: Validate alignment between OpenAPI contract and implemented code
 user-invokable: false
 tools: ['read', 'search']
-model: ['Claude Opus 4.6 (copilot)']
+model: ['GPT-5.3-Codex (copilot)']
 ---
 
 You are the **Reviewer**. You validate that the implementation aligns with the OpenAPI contract and architectural rules.
