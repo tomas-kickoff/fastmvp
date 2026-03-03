@@ -25,10 +25,16 @@ If `docs/figma.md` already exists:
 - Do NOT rewrite existing sections.
 
 ## Inputs
-- `docs/spec.md` (required)
-- `contracts/openapi.yaml` (required)
+- `docs/spec.md` (required — check `## Platform` and `## Services`)
+- All `contracts/openapi*.yaml` files (required — use the appropriate contract per service)
 - `resources/brand/brand.md` (optional — use if present)
 - `resources/figma/tokens.json` (optional — use if present for token reference)
+
+## Multi-service awareness
+If `## Services` in `docs/spec.md` lists multiple APIs:
+- Reference endpoints from the correct contract per service.
+- In the data mapping table, include a "Service" column to indicate which API each screen calls.
+- If a screen needs data from multiple services, note all of them.
 
 ## Platform detection (critical)
 Read `docs/spec.md` → `## Platform` section to determine the design target:

@@ -37,21 +37,25 @@ Run the **Specifier** agent as a subagent with the user's idea and any context t
 
 ### Phase 2 — Contracts
 Run the **Contract** agent as a subagent.
-- Input: reads `docs/spec.md`
-- Output: `contracts/openapi.yaml` (+ optional `contracts/db/*.sql`)
+- Input: reads `docs/spec.md` (including `## Services` table)
+- Output: `contracts/openapi.yaml` (+ `contracts/openapi-<service>.yaml` per additional service) (+ optional `contracts/db/*.sql`)
 
 ### Phase 3 — Planning & Design (parallel)
-Run these two subagents **in parallel**:
-- **API Planner** → `docs/tasks-api.md`
+Run these subagents **in parallel**:
+- **API Planner** (once per service — if multiple services, run once per service with the service name as context) → `docs/tasks-api.md`, `docs/tasks-api-ml.md`, etc.
 - **Designer** → `docs/figma.md`
 
-After both complete, inform the user:
+After all complete, inform the user:
 > Figma prompts are ready in `docs/figma.md`. You can paste them into Figma Make to create designs. If you export tokens, save them to `resources/figma/tokens.json` — the Web Dev agent will use them.
 
 ### Phase 4 — API Implementation
-Run the **API Dev** agent as a subagent.
-- Input: reads `contracts/openapi.yaml` + `docs/tasks-api.md`
-- Output: implemented code in `apps/api/**`, updated checkboxes in `docs/tasks-api.md`
+For **each service** in `## Services` (in order):
+1. Run the **API Dev** agent as a subagent with the service context:
+   - TypeScript service: reads `contracts/openapi.yaml` + `docs/tasks-api.md` → implements in `apps/api/**`
+   - Python service: reads `contracts/openapi-<service>.yaml` + `docs/tasks-<service>.md` → implements in `apps/<service>/**`
+2. After each service completes, verify its task checkboxes are updated before moving to the next.
+
+If only one service exists (the default), this phase runs once.
 
 ### Phase 5 — Web Planning
 Run the **Web Planner** agent as a subagent.
@@ -80,17 +84,33 @@ Initialize the `CHANGELOG.md` file with the first entry describing the initial M
 
 ## Platform awareness
 After Phase 1, read the `## Platform` section of `docs/spec.md` to determine the frontend stack:
-- `web` → React + Next.js (App Router). Frontend lives in `apps/web/`.
-- `mobile` → React Native (Expo). Frontend lives in `apps/web/`.
-- `both` → both stacks. Mobile in `apps/mobile/`, web in `apps/web/`.
+- `web` (DEFAULT) → React + Next.js (App Router). Frontend lives in `apps/web/`.
+- `mobile` → React Native (Expo). Frontend lives in `apps/mobile/`.
+- `both` → both stacks. Web in `apps/web/`, mobile in `apps/mobile/`.
 
 Pass the platform context to all subsequent subagents (Designer, Web Planner, Web Dev).
 If platform is `both`, run Web Planner and Web Dev **twice** (once per platform).
 
+## Multi-service awareness
+After Phase 1, read the `## Services` section of `docs/spec.md` to determine backend services:
+- Default: one service (`apps/api` — TypeScript/Fastify)
+- If multiple services: each has its own directory, contract, and task file
+
+| Stack | Framework | Directory | Contract | Task file |
+|-------|-----------|-----------|----------|-----------|
+| TypeScript | Fastify | `apps/api` | `contracts/openapi.yaml` | `docs/tasks-api.md` |
+| Python | Flask | `apps/api-<name>` | `contracts/openapi-<name>.yaml` | `docs/tasks-api-<name>.md` |
+
+Pass the service list to Contract, API Planner, and API Dev agents.
+All backends follow DDD + Clean Architecture + DI regardless of language.
+
 ## Monorepo structure
-- `apps/api/`: Fastify backend (Clean Architecture + DDD + DI)
-- `apps/web/`: frontend app (React+Next.js for web, or React Native Expo for mobile)
-- `contracts/openapi.yaml`: API contract (source of truth)
+- `apps/api/`: Fastify backend — TypeScript (Clean Architecture + DDD + DI) — always present
+- `apps/api-<name>/`: Additional backends — Python/Flask (only when needed for ML/AI/etc.)
+- `apps/web/`: React + Next.js frontend (for `web` or `both` platform)
+- `apps/mobile/`: React Native Expo frontend (for `mobile` or `both` platform)
+- `contracts/openapi.yaml`: API contract for main service (source of truth)
+- `contracts/openapi-<name>.yaml`: API contract for additional services
 - `contracts/db/`: SQL files (schema + queries, manual execution)
-- `docs/`: spec, tasks, figma prompts
+- `docs/`: spec, tasks (per service), figma prompts
 - `resources/`: brand, architecture, figma tokens

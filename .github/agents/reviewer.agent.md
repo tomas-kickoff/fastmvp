@@ -13,34 +13,48 @@ Produce an alignment report — either confirming everything is correct, or list
 
 ## What you check
 
-### 1. Contract ↔ API alignment
-For every endpoint in `contracts/openapi.yaml`:
-- A matching route exists in `apps/api/src/interfaces/http/routes/`
+### 1. Contract ↔ API alignment (per service)
+For every service in `docs/spec.md` → `## Services`:
+- Read the service's contract: `contracts/openapi.yaml` (TypeScript) or `contracts/openapi-<name>.yaml` (Python)
+- For every endpoint in the contract:
+  - TypeScript: a matching route exists in `apps/api/src/interfaces/http/routes/`
+  - Python: a matching blueprint exists in `apps/<service>/src/interfaces/http/blueprints/`
 - Request/response shapes match the OpenAPI schemas
 - Status codes match
 - Error responses use the `ErrorResponse` schema
 
-### 2. Contract ↔ Web alignment
-For every endpoint the Web app uses:
-- API calls go through `apps/web/src/shared/lib/api/*`
-- Request/response shapes match OpenAPI schemas
+### 2. Contract ↔ Web/Mobile alignment
+For every endpoint the frontend uses:
+- API calls go through `shared/lib/api/*`
+- Request/response shapes match the correct service's OpenAPI schemas
 - No invented endpoints or ad-hoc fetch calls
+- If multiple APIs: verify the client uses the correct base URL per service
 
-### 3. Architectural boundaries (API)
+### 3. Architectural boundaries (API — all services)
+For **TypeScript** services (`apps/api/`):
 - `domain/**`: no imports from infrastructure, interfaces, Fastify, pg, or process.env
 - `application/**`: no imports from infrastructure or interfaces
 - DI wiring only in `apps/api/src/app/container.ts`
+
+For **Python** services (`apps/api-<name>/`):
+- `domain/**`: no imports from infrastructure, interfaces, Flask, psycopg2, or os.environ
+- `application/**`: no imports from infrastructure or interfaces
+- DI wiring only in `apps/<service>/src/app/container.py`
+- Type hints present on all functions
+
+Common to all services:
 - No global singletons
 
-### 4. Architectural boundaries (Web)
+### 4. Architectural boundaries (Web/Mobile)
 - Feature-Sliced layers respected (app/pages/widgets/features/entities/shared)
 - No data fetching in pages, widgets, or shared/ui
 - API calls only in features/**/model/* or entities/**/model/*
 - Tokens used consistently (no hardcoded colors/spacing)
 
 ### 5. Contract completeness
-- Every endpoint in code exists in `contracts/openapi.yaml`
+- Every endpoint in code exists in the appropriate `contracts/openapi*.yaml`
 - No orphaned endpoints (in code but not in contract, or vice versa)
+- If multiple services: verify inter-service endpoints are documented
 
 ## Output format
 

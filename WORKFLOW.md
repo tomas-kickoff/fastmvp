@@ -1,9 +1,12 @@
 # fastmvp workflow
 
 This repo is a **monorepo MVP factory**:
-- `apps/api` = backend (Fastify + Clean Architecture + DDD + DI)
-- `apps/web` = frontend (React Native Expo + Feature-Sliced)
-- `contracts/openapi.yaml` = **the boundary** (source of truth)
+- `apps/api` = primary backend (Fastify + TypeScript + Clean Architecture + DDD + DI) — always present
+- `apps/api-<name>` = additional backends (Flask + Python — only when a different tech stack is needed, e.g., ML/AI)
+- `apps/web` = web frontend (React + Next.js + Feature-Sliced) — default
+- `apps/mobile` = mobile frontend (React Native Expo + Feature-Sliced) — when platform=mobile or both
+- `contracts/openapi.yaml` = **main API boundary** (source of truth)
+- `contracts/openapi-<name>.yaml` = contract per additional service
 
 ## Agents (recommended)
 
@@ -20,13 +23,15 @@ Specifier → Contract → API Planner + Designer (parallel)
 ```
 
 **Outputs:**
-- `docs/spec.md` — product spec
-- `contracts/openapi.yaml` — API contract (+ optional `contracts/db/*.sql`)
+- `docs/spec.md` — product spec (includes `## Services` table and `## Platform`)
+- `contracts/openapi.yaml` — API contract (+ `contracts/openapi-<name>.yaml` per additional service)
+- `contracts/db/*.sql` — optional database schema
 - `docs/figma.md` — Figma Make prompts + data mapping
-- `docs/tasks-api.md` — API checklist (completed)
+- `docs/tasks-api.md` — API checklist (completed) + `docs/tasks-api-<name>.md` per additional service
 - `docs/tasks-web.md` — Web checklist (completed)
-- `apps/api/**` — implemented backend
-- `apps/web/**` — implemented frontend
+- `apps/api/**` — implemented TypeScript backend
+- `apps/api-<name>/**` — implemented Python backend(s) (if needed)
+- `apps/web/**` — implemented web frontend (or `apps/mobile/**` for mobile)
 
 After completion, handoff buttons appear: **[Add a Feature]** **[Fix a Bug]**
 
@@ -49,15 +54,27 @@ After completion, handoff buttons appear: **[Add a Feature]** **[Fix a Bug]**
   ├── fastmvp.agent.md          # Orchestrator: new MVP (user-invokable)
   ├── feature-builder.agent.md  # Orchestrator: add feature (user-invokable)
   ├── bug-fixer.agent.md        # Orchestrator: fix bugs (user-invokable)
-  ├── specifier.agent.md        # Worker: idea → spec
-  ├── contract.agent.md         # Worker: spec → openapi + SQL
-  ├── api-planner.agent.md      # Worker: spec + openapi → tasks-api
-  ├── api-dev.agent.md          # Worker: implements API
-  ├── designer.agent.md          # Worker: spec + openapi → figma prompts + tokens
+  ├── specifier.agent.md        # Worker: idea → spec (multi-service aware)
+  ├── contract.agent.md         # Worker: spec → openapi(s) + SQL
+  ├── api-planner.agent.md      # Worker: spec + openapi → tasks per service
+  ├── api-dev.agent.md          # Worker: implements API (TS or Python)
+  ├── designer.agent.md         # Worker: spec + openapi → figma prompts + tokens
   ├── design-integrator.agent.md # Orchestrator: Figma Make code → integrated frontend
   ├── web-planner.agent.md      # Worker: spec + openapi + figma → tasks-web
-  ├── web-dev.agent.md          # Worker: implements Web
+  ├── web-dev.agent.md          # Worker: implements Web or Mobile
   └── reviewer.agent.md         # Worker: validates contract ↔ code alignment
+
+.github/skills/
+  ├── typescript-api/           # Skill: TS/Fastify + DDD patterns & templates
+  │   ├── SKILL.md
+  │   └── references/
+  ├── python-api/              # Skill: Python/Flask + DDD patterns & templates
+  │   ├── SKILL.md
+  │   └── references/
+  ├── react-nextjs-web/        # Skill: Next.js + Feature-Sliced patterns
+  │   └── SKILL.md
+  └── react-native-mobile/     # Skill: React Native + Feature-Sliced patterns
+      └── SKILL.md
 ```
 
 Workers have `user-invokable: false` — they only run as subagents, not from the dropdown.
@@ -96,10 +113,14 @@ The original prompt files in `.github/prompts/` still work for manual step-by-st
 - **Multi-language Skills**: Agents equipped with skills for different programming languages beyond the current stack.
 
 ## Non-negotiables
-- **OpenAPI is the boundary:** no invented endpoints/payloads on API or Web.
-- **API uses DDD + DI:** wiring happens only in `apps/api/src/app/container.ts`.
+- **OpenAPI is the boundary:** no invented endpoints/payloads on API or Web. Each service has its own contract.
+- **All backends use DDD + DI:** wiring happens only in `container.{ts,py}`.
+  - TypeScript: `apps/api/src/app/container.ts`
+  - Python: `apps/<service>/src/app/container.py`
 - **DB policy:** SQL files for manual execution in a DB client (no migrations, no local Postgres).
 - **Web uses Feature-Sliced:** `app/pages/widgets/features/entities/shared`, networking only via `shared/lib/api/*`.
+- **Default platform is web** (React + Next.js). Expo only for mobile.
+- **Minimize services:** default to one API. Additional services only when a different tech stack is truly needed (e.g., Python for ML/AI).
 
 
 

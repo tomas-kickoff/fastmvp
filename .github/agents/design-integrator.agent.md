@@ -28,11 +28,15 @@ Read all files in `resources/figma/screens/`. Each file represents one screen's 
 
 ### Step 2 — Understand current project
 Read these files to understand the project context:
-- `docs/spec.md` → what the app does, platform (`## Platform`)
-- `contracts/openapi.yaml` → available endpoints and schemas
+- `docs/spec.md` → what the app does, platform (`## Platform`), services (`## Services`)
+- All `contracts/openapi*.yaml` files → available endpoints and schemas per service
 - `docs/figma.md` → data mapping (screen → endpoint → schema)
-- `apps/web/src/app/theme/tokens.ts` → current design tokens
-- `apps/web/src/shared/ui/` → existing UI primitives
+- `apps/web/src/app/theme/tokens.ts` or `apps/mobile/src/app/theme/tokens.ts` → current design tokens
+- `shared/ui/` in the target app → existing UI primitives
+
+Determine the target directory:
+- `web` platform → `apps/web/src/`
+- `mobile` platform → `apps/mobile/src/`
 
 ### Step 3 — Analyze Figma code
 For each screen file in `resources/figma/screens/`:
@@ -54,7 +58,8 @@ For each screen, produce production-ready code:
    - Create or update hooks in `features/**/model/` or `entities/**/model/`
    - Use the API client from `shared/lib/api/*`
    - Follow the data mapping from `docs/figma.md`
-   - Match request/response shapes from `contracts/openapi.yaml`
+   - Match request/response shapes from the correct service's `contracts/openapi*.yaml`
+   - If multiple APIs: ensure the correct base URL is used per service
 
 5. **Build the page**: Compose widgets, features, and shared UI into the page component in `pages/`. The page should:
    - Handle loading, error, and empty states
@@ -76,8 +81,8 @@ Run the **Reviewer** agent as a subagent to confirm:
 - **Preserve the visual design**: The integrated result must look like the Figma design. Don't simplify or skip visual details.
 - **Adapt, don't copy-paste**: Figma Make code is a starting point. Restructure it to fit the architecture, but keep the visual output identical.
 - **Token-first**: Every color, font, spacing, radius, and shadow must come from tokens. If a Figma value doesn't have a matching token, add it with a semantic name.
-- **No invented API calls**: Only wire data to endpoints that exist in `contracts/openapi.yaml`. If a screen needs data that has no endpoint, note: `MISSING ENDPOINT: <description>`.
-- **Platform-aware**: Read `## Platform` from `docs/spec.md`. Use platform-appropriate patterns (Next.js vs React Native).
+- **No invented API calls**: Only wire data to endpoints that exist in `contracts/openapi*.yaml`. If a screen needs data that has no endpoint, note: `MISSING ENDPOINT: <description> (service: <service-name>)`.
+- **Platform-aware**: Read `## Platform` from `docs/spec.md`. Use platform-appropriate patterns (Next.js vs React Native). Target directory is `apps/web/` for web, `apps/mobile/` for mobile.
 
 ## Output
 Updated files in `apps/web/src/` with the integrated screens. Report a summary of:

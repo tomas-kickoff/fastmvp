@@ -33,17 +33,25 @@ If `docs/tasks-web.md` already exists:
 
 ## Platform detection (critical)
 Read `docs/spec.md` → `## Platform` section to determine the stack:
-- `mobile` → React Native (Expo) + React Navigation
-- `web` → React + Next.js (App Router)
-- `both` → generate tasks for each platform separately
+- `web` (DEFAULT) → React + Next.js (App Router) — `apps/web/`
+- `mobile` → React Native (Expo) + React Navigation — `apps/mobile/`
+- `both` → generate tasks for each platform separately, in separate files or sections
 
 Tasks must reference the correct framework patterns:
-- Mobile: `StyleSheet`, React Navigation, AsyncStorage
 - Web: Next.js App Router (`app/` routes, `page.tsx`, `layout.tsx`), CSS modules or Tailwind, `next/link`, `next/navigation`
+- Mobile: `StyleSheet`, React Navigation, AsyncStorage
+
+## Multi-service awareness
+Read `docs/spec.md` → `## Services` table. If multiple APIs exist:
+- The API client must support multiple base URLs (one per service).
+- Include tasks for configuring env vars for each API endpoint.
+- Reference the correct OpenAPI contract per service (e.g., `contracts/openapi.yaml`, `contracts/openapi-ml.yaml`).
 
 ## Non-negotiable constraints
-- Frontend must follow `contracts/openapi.yaml` — no invented endpoints/payloads.
-- All networking through `apps/web/src/shared/lib/api/*`.
+- Frontend must follow all service contracts — no invented endpoints/payloads.
+  - Main API: `contracts/openapi.yaml`
+  - Additional services: `contracts/openapi-<service>.yaml`
+- All networking through `shared/lib/api/*`.
 - Architecture: Feature-Sliced (FSD) — `app/`, `pages/`, `widgets/`, `features/`, `entities/`, `shared/`
 
 ## Output format (docs/tasks-web.md)

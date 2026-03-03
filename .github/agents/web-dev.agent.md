@@ -21,18 +21,21 @@ Execute the tasks in `docs/tasks-web.md` and implement code that matches `contra
 ## Platform detection (critical)
 Read `docs/spec.md` → `## Platform` section to determine the stack:
 
-### If platform is `mobile` (React Native + Expo)
+### If platform is `web` (React + Next.js) — DEFAULT
 - Follow the rules in [Web instructions](../../.github/instructions/web.instructions.md).
-- Use React Navigation for routing.
-- Use AsyncStorage for persistence.
-- Components use React Native primitives (`View`, `Text`, `TouchableOpacity`, etc.).
-
-### If platform is `web` (React + Next.js)
 - Use Next.js App Router (`app/` directory for routes).
 - Use standard HTML elements + CSS modules or Tailwind.
 - Use `next/navigation` for routing (`useRouter`, `useParams`).
 - Use cookies/localStorage for persistence (not AsyncStorage).
 - SSR-friendly: prefer server components where possible, use `'use client'` only when needed.
+- Frontend lives in `apps/web/`.
+
+### If platform is `mobile` (React Native + Expo)
+- Follow the rules in [Web instructions](../../.github/instructions/web.instructions.md).
+- Use React Navigation for routing.
+- Use AsyncStorage for persistence.
+- Components use React Native primitives (`View`, `Text`, `TouchableOpacity`, etc.).
+- Frontend lives in `apps/mobile/`.
 
 ### Architecture (Feature-Sliced — applies to BOTH platforms)
 
@@ -51,9 +54,15 @@ For Next.js web apps, the `app/` directory serves double duty:
 The Feature-Sliced boundaries (features/, entities/, shared/, widgets/) apply equally regardless of platform.
 
 ## OpenAPI boundary (non-negotiable)
+- Read `docs/spec.md` → `## Services` table to know which APIs exist.
+- For the main API: use `contracts/openapi.yaml`.
+- For additional services (e.g., ML): use `contracts/openapi-<service>.yaml`.
 - Do not invent endpoints, request bodies, response shapes, or status codes.
 - No ad-hoc fetch calls in UI.
-- All network calls through `apps/web/src/shared/lib/api/*`.
+- All network calls through `apps/web/src/shared/lib/api/*` (or `apps/mobile/src/shared/lib/api/*`).
+- If multiple APIs exist, the API client should support multiple base URLs:
+  - Main API: `API_URL` / `NEXT_PUBLIC_API_URL`
+  - ML API: `ML_API_URL` / `NEXT_PUBLIC_ML_API_URL`
 - Prefer a typed client generated from OpenAPI. If not available, use a minimal wrapper in `shared/lib/api/client.ts`.
 
 ## Data fetching rules
@@ -82,12 +91,14 @@ Use tokens consistently in `shared/ui/*` — no hardcoded styling.
 
 ### Mobile (React Native)
 - Route names in `app/navigation/routes.ts`, types in `shared/types/navigation.ts`.
+- Frontend lives in `apps/mobile/`.
 
 ### Web (Next.js)
 - Routes defined by file system in `app/` directory (Next.js App Router convention).
 - Route types in `shared/types/navigation.ts` (for programmatic navigation).
 - Use `<Link>` from `next/link` for navigation.
 - Tables, dashboards, and data-heavy views: use a minimal component library (e.g., `@tanstack/react-table`) or build from shared/ui primitives.
+- Frontend lives in `apps/web/`.
 
 ## Optional design input
 If `docs/figma.md` exists, follow its screen list and data mapping.

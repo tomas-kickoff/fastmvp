@@ -1,4 +1,7 @@
-# API Implementation Rules
+# TypeScript API Implementation Rules
+
+## Scope
+These instructions apply to TypeScript backend services using Fastify (e.g., `apps/api/`). For Python backends, see `python-api.instructions.md`.
 
 ## Dependency rules (non-negotiable)
 

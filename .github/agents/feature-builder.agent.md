@@ -30,11 +30,14 @@ Unlike the full FastMVP pipeline, you operate on **deltas**:
 
 ### Phase 1 — Understand current state
 Read these files yourself (do NOT delegate):
-- `docs/spec.md` (current spec)
-- `contracts/openapi.yaml` (current contract)
-- `docs/tasks-api.md` and `docs/tasks-web.md` (if they exist, to see what's done)
+- `docs/spec.md` (current spec — check `## Services` and `## Platform`)
+- All `contracts/openapi*.yaml` files (contracts for all services)
+- `docs/tasks-api.md` and any `docs/tasks-api-*.md` (if they exist, to see what's done)
+- `docs/tasks-web.md` (if exists)
 
-Summarize the current state briefly to the user.
+Summarize the current state briefly to the user, including:
+- Which services exist and their stacks
+- Which platform the frontend uses
 
 ### Phase 2 — Specify the feature
 Run the **Specifier** agent as a subagent with:
@@ -49,16 +52,19 @@ Run the **Specifier** agent as a subagent with:
 
 ### Phase 3 — Update contracts
 Run the **Contract** agent as a subagent with:
-- Instructions to read the existing `contracts/openapi.yaml` and **add** the new endpoints/schemas required by the feature
+- Instructions to read all existing `contracts/openapi*.yaml` files and **add** the new endpoints/schemas required by the feature to the appropriate service contract(s)
 - Must NOT remove or change existing endpoints unless the feature explicitly modifies them
+- If the feature requires a new service, create a new `contracts/openapi-<service>.yaml`
 
 ### Phase 4 — Plan & Design (parallel)
 Run in **parallel**:
-- **API Planner**: generate incremental tasks for the feature only, **appending** to `docs/tasks-api.md` under a new section `## Feature: <name>`
+- **API Planner**: generate incremental tasks for the feature, for each affected service. Append to the service's task file under `## Feature: <name>`
 - **Designer**: update `docs/figma.md` with new screen prompts for the feature (append, don't rewrite)
 
 ### Phase 5 — API Implementation
-Run the **API Dev** agent as a subagent to implement only the new feature tasks.
+For each affected service, run the **API Dev** agent as a subagent with the service context to implement only the new feature tasks.
+- TypeScript service: `apps/api/` + `docs/tasks-api.md`
+- Python service: `apps/<service>/` + `docs/tasks-<service>.md`
 
 ### Phase 6 — Web Planning
 Run the **Web Planner** agent as a subagent to generate incremental web tasks, **appending** to `docs/tasks-web.md`.
@@ -79,4 +85,5 @@ Update the `CHANGELOG.md` file (create it if it doesn't exist) with a new entry 
 - **Incremental, not destructive**: never rewrite existing spec/contract/tasks — append or surgically update.
 - If the feature requires changing an existing endpoint, update the contract first and clearly note the breaking change.
 - If the feature conflicts with existing functionality, STOP and report to the user.
-- `contracts/openapi.yaml` remains the single source of truth.
+- All service contracts remain the single source of truth (`contracts/openapi*.yaml`).
+- Respect architectural boundaries: DDD for all backends, Feature-Sliced for all frontends.

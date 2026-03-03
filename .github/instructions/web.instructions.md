@@ -6,17 +6,19 @@ These instructions apply to `apps/web/**` only.
 ## Stack (platform-dependent)
 The platform is defined in `docs/spec.md` under `## Platform`:
 
-### Mobile
-- React Native (Expo) + TypeScript
-- React Navigation for routing
-- AsyncStorage for persistence
-
-### Web
+### Web (DEFAULT)
 - React + Next.js (App Router) + TypeScript
 - `next/navigation` and `next/link` for routing
 - Cookies/localStorage for persistence
 - Server components where possible, `'use client'` only when needed
 - Tailwind CSS or CSS modules for styling
+- Frontend lives in `apps/web/`
+
+### Mobile
+- React Native (Expo) + TypeScript
+- React Navigation for routing
+- AsyncStorage for persistence
+- Frontend lives in `apps/mobile/`
 
 ## Frontend architecture: Feature-Sliced (FSD)
 Use a Feature-Sliced structure under `apps/web/src`:
@@ -40,11 +42,13 @@ Responsibilities and boundaries (non-negotiable)
 - `shared/`: UI primitives (Button/Input), generic hooks, config/env, and API client plumbing.
 
 ## OpenAPI contract boundary (monorepo rule)
-- `contracts/openapi.yaml` is the source of truth for API shapes.
+- `contracts/openapi.yaml` is the source of truth for the main API.
+- Additional services have their own contracts: `contracts/openapi-<name>.yaml`.
 - Do not invent payloads or ad-hoc `fetch()` calls.
 - All network calls must go through `shared/lib/api/*`.
+- If multiple APIs exist, the API client must support multiple base URLs.
 - Prefer a generated typed client from OpenAPI. Until generated, keep a thin placeholder client in `shared/lib/api/client.ts`.
-- If an endpoint or field is missing: update `contracts/openapi.yaml` first (do not patch around it in the UI).
+- If an endpoint or field is missing: update the appropriate contract first (do not patch around it in the UI).
 
 ## Data fetching rules
 - No direct `fetch`/`axios` usage in `pages/**`, `widgets/**`, or `shared/ui/**`.
