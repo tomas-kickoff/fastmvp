@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FastMVP — Agent-Driven MVP Factory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #f5f3ee;
+    --surface:   #ffffff;
+    --surface2:  #ede9e1;
+    --border:    #d8d3c8;
+    --border2:   #e8e4db;
+    --ink:       #1a1814;
+    --ink2:      #4a4740;
+    --muted:     #9a958c;
+    --accent:    #2d4fd6;
+    --accent-bg: #eef1fc;
+    --green:     #15803d; --green-bg: #dcfce7;
+    --amber:     #b45309; --amber-bg: #fef3c7;
+    --red:       #b91c1c; --red-bg:   #fee2e2;
+    --violet:    #6d28d9; --violet-bg:#ede9fe;
+    --blue:      #1d4ed8; --blue-bg:  #dbeafe;
+    --teal:      #0f766e; --teal-bg:  #ccfbf1;
+    --p1c:#b45309; --p1bg:#fef3c7;
+    --p2c:#1d4ed8; --p2bg:#dbeafe;
+    --p3c:#15803d; --p3bg:#dcfce7;
+    --p4c:#6d28d9; --p4bg:#ede9fe;
+    --p5c:#0f766e; --p5bg:#ccfbf1;
+    --p6c:#b91c1c; --p6bg:#fee2e2;
+    --p7c:#4d7c0f; --p7bg:#ecfccb;
+    --p8c:#9a958c; --p8bg:#f5f5f4;
+    --r:12px;
+    --sh: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.05);
+    --sh2:0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.6;min-height:100vh}
+
+  /* NAV */
+  nav{position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(245,243,238,0.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:68px}
+  .logo{display:flex;align-items:center;gap:10px;font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--accent);letter-spacing:0.04em}
+  .logo-dot{width:9px;height:9px;border-radius:50%;background:var(--accent)}
+  .tabs{display:flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:4px}
+  .tab{padding:9px 18px;font-size:13px;font-weight:500;border:none;border-radius:7px;cursor:pointer;background:none;color:var(--ink2);transition:all .18s;font-family:'DM Sans',sans-serif}
+  .tab:hover{color:var(--ink);background:var(--border2)}
+  .tab.active{background:var(--surface);color:var(--accent);font-weight:600;box-shadow:var(--sh)}
+
+  /* SECTIONS */
+  section{display:none;min-height:100vh;padding:104px 40px 80px}
+  section.visible{display:block}
+  .inner{max-width:1060px;margin:0 auto}
+
+  /* TYPE */
+  .eyebrow{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+  h1{font-family:'Instrument Serif',serif;font-size:clamp(54px,7vw,92px);line-height:1.0;letter-spacing:-0.02em}
+  h1 em{font-style:italic;color:var(--accent)}
+  h2{font-family:'Instrument Serif',serif;font-size:clamp(38px,4vw,54px);line-height:1.1;letter-spacing:-0.01em;margin-bottom:8px}
+  .lead{font-size:18px;color:var(--ink2);line-height:1.65;max-width:640px;margin-top:16px}
+
+  /* OVERVIEW */
+  hr.rule{margin:40px 0;border:none;border-top:1px solid var(--border)}
+  .callout{background:var(--accent-bg);border:1px solid #c7d3f8;border-left:4px solid var(--accent);border-radius:0 var(--r) var(--r) 0;padding:22px 26px;font-size:16px;color:var(--ink2);line-height:1.65;margin-bottom:40px}
+  .callout strong{color:var(--accent);font-weight:600}
+  .principles{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+  .pc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:26px;box-shadow:var(--sh);transition:transform .18s,box-shadow .18s,border-color .18s}
+  .pc:hover{transform:translateY(-3px);box-shadow:var(--sh2);border-color:var(--accent)}
+  .pc-icon{font-size:30px;margin-bottom:14px}
+  .pc-title{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:8px}
+  .pc-desc{font-size:14px;color:var(--ink2);line-height:1.55}
+
+  /* PIPELINE */
+  .orch{background:var(--surface);border:2px solid var(--accent);border-radius:var(--r);padding:20px 30px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--sh);margin-bottom:24px;gap:20px}
+  .orch-lbl{font-family:'DM Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px}
+  .orch-title{font-family:'Instrument Serif',serif;font-size:28px;color:var(--ink)}
+  .orch-desc{font-size:14px;color:var(--ink2);max-width:480px;text-align:right;line-height:1.5}
+  .stack{display:flex;flex-direction:column}
+  .prow{display:grid;grid-template-columns:210px 1fr;cursor:pointer}
+  .plabel{padding:26px 24px;border:1px solid;border-right:none;display:flex;flex-direction:column;justify-content:center;transition:filter .18s}
+  .prow:not(:first-child) .plabel{border-top:none;border-radius:0}
+  .prow:first-child .plabel{border-radius:var(--r) 0 0 0}
+  .prow:last-child .plabel{border-radius:0 0 0 var(--r)}
+  .plabel:hover{filter:brightness(.96)}
+  .pnum{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.12em;opacity:.7;margin-bottom:4px}
+  .pname{font-size:17px;font-weight:700;line-height:1.2}
+  .pcmd{font-family:'DM Mono',monospace;font-size:11px;margin-top:7px;opacity:.6}
+  .pbody{border:1px solid var(--border);border-left:none;padding:24px 28px;display:flex;align-items:center;gap:20px;background:var(--surface);transition:background .18s;border-radius:0 var(--r) 0 0}
+  .prow:not(:first-child) .pbody{border-top:none;border-radius:0}
+  .prow:last-child .pbody{border-radius:0 0 var(--r) 0}
+  .prow:hover .pbody{background:#fafaf8}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;flex:1}
+  .chip{display:inline-flex;align-items:center;padding:7px 16px;border-radius:100px;font-size:14px;font-weight:600;border:1.5px solid;white-space:nowrap}
+  .chip-ghost{font-size:14px;color:var(--muted);font-style:italic;padding:7px 0}
+  .gate-badge{font-family:'DM Mono',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:6px;background:var(--red-bg);color:var(--red);border:1.5px solid #fca5a5;letter-spacing:0.08em}
+  .parallel-badge{font-family:'DM Mono',monospace;font-size:12px;font-weight:700;padding:6px 12px;border-radius:6px;background:var(--teal-bg);color:var(--teal);border:1.5px solid #5eead4;letter-spacing:0.08em}
+  .outpill{display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);border:1.5px solid #86efac;border-radius:100px;padding:7px 18px;font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--green);white-space:nowrap;flex-shrink:0}
+
+  .p1-l{background:var(--p1bg);border-color:#fbbf24;color:var(--p1c)}
+  .p2-l{background:var(--p2bg);border-color:#93c5fd;color:var(--p2c)}
+  .p3-l{background:var(--p3bg);border-color:#86efac;color:var(--p3c)}
+  .p4-l{background:var(--p4bg);border-color:#c4b5fd;color:var(--p4c)}
+  .p5-l{background:var(--p5bg);border-color:#5eead4;color:var(--p5c)}
+  .p6-l{background:var(--p6bg);border-color:#fca5a5;color:var(--p6c)}
+  .p7-l{background:var(--p7bg);border-color:#a3e635;color:var(--p7c)}
+  .p8-l{background:var(--p8bg);border-color:#d4d4d4;color:var(--p8c)}
+
+  /* BUG FIXER STEPS */
+  .bf-l1{background:#fef3c7;border-color:#fbbf24;color:#b45309}
+  .bf-l2{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8}
+  .bf-l3{background:#ede9fe;border-color:#c4b5fd;color:#6d28d9}
+  .bf-l4{background:#fee2e2;border-color:#fca5a5;color:#b91c1c}
+  .bf-l5{background:#dcfce7;border-color:#86efac;color:#15803d}
+  .bf-l6{background:#f5f5f4;border-color:#d4d4d4;color:#9a958c}
+
+  /* MODAL */
+  .overlay{display:none;position:fixed;inset:0;background:rgba(26,24,20,.45);backdrop-filter:blur(6px);z-index:500;align-items:center;justify-content:center;padding:32px}
+  .overlay.open{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;max-width:740px;width:100%;max-height:85vh;overflow-y:auto;padding:44px;position:relative;box-shadow:var(--sh2);animation:popIn .22s cubic-bezier(.34,1.4,.64,1) both}
+  @keyframes popIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+  .mclose{position:absolute;top:20px;right:20px;width:38px;height:38px;border-radius:8px;border:1px solid var(--border);background:none;cursor:pointer;font-size:18px;color:var(--muted);display:flex;align-items:center;justify-content:center;transition:all .15s}
+  .mclose:hover{background:var(--surface2);color:var(--ink)}
+  .mbadge{display:inline-block;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;padding:5px 13px;border-radius:6px;border:1.5px solid;margin-bottom:20px;font-weight:500}
+  .modal h3{font-family:'Instrument Serif',serif;font-size:32px;color:var(--ink);margin-bottom:6px;line-height:1.1}
+  .mcmd{font-family:'DM Mono',monospace;font-size:13px;color:var(--muted);margin-bottom:20px}
+  .mobj{font-size:15px;color:var(--ink2);line-height:1.65;padding:18px 22px;background:var(--bg);border-radius:10px;border:1px solid var(--border);margin-bottom:28px}
+  .mlabel{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+  .flist{display:flex;flex-direction:column;gap:10px;margin-bottom:28px}
+  .fitem{display:flex;gap:14px;align-items:flex-start}
+  .fnum{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--accent);width:26px;flex-shrink:0;padding-top:3px}
+  .ftext{font-size:15px;line-height:1.6;color:var(--ink)}
+  .ftext code{font-family:'DM Mono',monospace;font-size:13px;background:var(--accent-bg);color:var(--accent);padding:2px 7px;border-radius:4px}
+  .mtable{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:24px}
+  .mtable th{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 14px;border-bottom:1px solid var(--border)}
+  .mtable td{padding:11px 14px;border-bottom:1px solid var(--border2);vertical-align:top;line-height:1.5}
+  .mtable tr:last-child td{border-bottom:none}
+  .mout{display:inline-flex;align-items:center;gap:8px;background:var(--green-bg);border:1.5px solid #86efac;border-radius:10px;padding:12px 20px;font-family:'DM Mono',monospace;font-size:14px;color:var(--green)}
+
+  /* AGENTS */
+  .agents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+  .ac{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:28px;box-shadow:var(--sh);transition:transform .18s,box-shadow .18s}
+  .ac:hover{transform:translateY(-3px);box-shadow:var(--sh2)}
+  .ac-hd{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px}
+  .ac-icon{width:46px;height:46px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .ac-name{font-size:18px;font-weight:700;color:var(--ink);margin-bottom:3px}
+  .ac-ph{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.08em}
+  .ap{display:flex;gap:12px;margin-bottom:10px;font-size:14px;align-items:flex-start}
+  .ap-lbl{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);width:68px;flex-shrink:0;padding-top:3px}
+  .ap-val{color:var(--ink2);line-height:1.5}
+
+  /* SKILLS */
+  .layer-nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px}
+  .lbtn{padding:9px 20px;border:1.5px solid var(--border);border-radius:100px;font-size:14px;font-weight:500;cursor:pointer;background:var(--surface);color:var(--ink2);transition:all .15s;font-family:'DM Sans',sans-serif}
+  .lbtn:hover{border-color:var(--accent);color:var(--accent)}
+  .lbtn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+  .lg{margin-bottom:36px}
+  .lg-title{font-family:'DM Mono',monospace;font-size:12px;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+  .sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+  .sk{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;transition:transform .15s,box-shadow .15s}
+  .sk:hover{transform:translateY(-2px);box-shadow:var(--sh)}
+  .sk-id{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;margin-bottom:4px}
+  .sk-scope{font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);margin-bottom:8px}
+  .sk-desc{font-size:13px;color:var(--ink2);line-height:1.5}
+
+  /* ARTIFACTS */
+  .ftree{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:36px;font-family:'DM Mono',monospace;font-size:15px;line-height:2.4;box-shadow:var(--sh)}
+  .td{color:var(--accent);font-weight:500}
+  .tf{color:var(--ink)}
+  .tc{color:var(--muted);font-size:12px;margin-left:14px}
+  .ptag{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;vertical-align:middle;letter-spacing:.06em}
+
+  /* ANIM */
+  @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+  .a{animation:fadeUp .5s ease both}
+  .a1{animation-delay:.08s}.a2{animation-delay:.16s}.a3{animation-delay:.24s}.a4{animation-delay:.32s}
+
+  /* SCROLL */
+  ::-webkit-scrollbar{width:6px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+  /* WORKFLOW SELECTOR */
+  .wf-selector{display:flex;gap:12px;margin-bottom:32px}
+  .wf-btn{flex:1;padding:20px 24px;border:2px solid var(--border);border-radius:var(--r);background:var(--surface);cursor:pointer;transition:all .18s;text-align:left;box-shadow:var(--sh)}
+  .wf-btn:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--sh2)}
+  .wf-btn.wf-active{border-color:var(--accent);background:var(--accent-bg)}
+  .wf-icon{font-size:28px;margin-bottom:8px}
+  .wf-name{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:4px}
+  .wf-desc{font-size:13px;color:var(--ink2);line-height:1.4}
+  .wf-panel{display:none}
+  .wf-panel.wf-visible{display:block}
+
+  @media(max-width:720px){
+    nav{padding:0 16px}
+    section{padding:88px 16px 60px}
+    .prow{grid-template-columns:1fr}
+    .pbody{border-left:1px solid var(--border);border-top:none !important;border-radius:0 0 var(--r) var(--r) !important}
+    .plabel{border-radius:var(--r) var(--r) 0 0 !important;border-right:1px solid !important}
+    .wf-selector{flex-direction:column}
+    .orch{flex-direction:column;gap:8px}
+    .orch-desc{text-align:left}
+    .tabs{overflow-x:auto;flex-wrap:nowrap}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><div class="logo-dot"></div>FAST MVP</div>
+  <div class="tabs">
+    <button class="tab active" onclick="go('overview',this)">Overview</button>
+    <button class="tab" onclick="go('pipeline',this)">Pipelines</button>
+    <button class="tab" onclick="go('agents',this)">Agentes</button>
+    <button class="tab" onclick="go('skills',this)">Skills</button>
+    <button class="tab" onclick="go('artifacts',this)">Artefactos</button>
+  </div>
+</nav>
+
+<!-- ═══════════════ OVERVIEW ═══════════════ -->
+<section id="overview" class="visible">
+<div class="inner">
+  <div class="eyebrow a">Monorepo MVP Factory · Agentes IA</div>
+  <h1 class="a a1">Fast<br><em>MVP</em></h1>
+  <p class="lead a a2">Una fábrica de MVPs completos impulsada por agentes IA especializados — desde una idea en texto plano hasta un backend con DDD, contratos OpenAPI, diseño Figma y frontend funcional, todo en un monorepo.</p>
+  <hr class="rule a a3">
+  <div class="callout a a3"><strong>3 workflows orquestados:</strong> FastMVP construye un MVP completo desde cero. Feature Builder agrega funcionalidad incremental sin romper lo existente. Bug Fixer diagnostica y repara bugs con validación automática. Todos comparten la misma arquitectura de agentes y skills.</div>
+  <div class="principles a a4">
+    <div class="pc"><div class="pc-icon">🏗️</div><div class="pc-title">DDD + Clean Architecture</div><div class="pc-desc">Todos los backends siguen Domain-Driven Design con capas domain → application → infrastructure → interfaces y DI obligatorio. Independiente del lenguaje.</div></div>
+    <div class="pc"><div class="pc-icon">📄</div><div class="pc-title">OpenAPI como Contrato</div><div class="pc-desc">contracts/openapi.yaml es la fuente de verdad entre API y frontend. Nada se inventa: endpoints, schemas y status codes vienen del contrato.</div></div>
+    <div class="pc"><div class="pc-icon">🧩</div><div class="pc-title">Feature-Sliced Frontend</div><div class="pc-desc">Web (Next.js) y Mobile (Expo) usan la misma arquitectura FSD: app / pages / widgets / features / entities / shared. Networking solo vía shared/lib/api/*.</div></div>
+    <div class="pc"><div class="pc-icon">🔌</div><div class="pc-title">Skills Dinámicas</div><div class="pc-desc">Cada agente carga skills según el stack: typescript-api, python-api, react-nextjs-web, react-native-mobile. El mismo API Dev se comporta diferente en TS vs Python.</div></div>
+    <div class="pc"><div class="pc-icon">⚡</div><div class="pc-title">Multi-servicio Inteligente</div><div class="pc-desc">Default: un backend TypeScript/Fastify. Solo se agrega un servicio Python/Flask cuando se necesita un stack diferente (ML, AI). Cada uno con su propio contrato y tareas.</div></div>
+    <div class="pc"><div class="pc-icon">🔄</div><div class="pc-title">Incrementalidad</div><div class="pc-desc">Feature Builder y Bug Fixer operan sobre deltas: leen el estado actual y solo agregan/corrigen lo necesario sin reescribir lo existente.</div></div>
+    <div class="pc"><div class="pc-icon">🚦</div><div class="pc-title">Reviewer Automático</div><div class="pc-desc">Al final de cada pipeline, el Reviewer valida alineación contrato ↔ código, boundaries arquitectónicas y drift. Distingue issues bloqueantes de warnings.</div></div>
+    <div class="pc"><div class="pc-icon">🎨</div><div class="pc-title">Integración Figma</div><div class="pc-desc">El Designer genera prompts para Figma Make. El Design Integrator toma el código exportado y lo adapta: tokens, Feature-Sliced, API boundary. Visual fiel, arquitectura limpia.</div></div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ PIPELINES ═══════════════ -->
+<section id="pipeline">
+<div class="inner">
+  <div class="eyebrow a">Flujos de trabajo</div>
+  <h2 class="a a1">Pipelines</h2>
+  <p class="lead a a2" style="margin-bottom:32px">3 workflows orquestados por agentes especializados. Haz clic en cualquier fase para ver el detalle.</p>
+
+  <!-- Workflow selector -->
+  <div class="wf-selector a a3">
+    <div class="wf-btn wf-active" onclick="switchWF('fastmvp',this)">
+      <div class="wf-icon">🚀</div>
+      <div class="wf-name">FastMVP</div>
+      <div class="wf-desc">MVP completo desde una idea. 8 fases secuenciales.</div>
+    </div>
+    <div class="wf-btn" onclick="switchWF('feature',this)">
+      <div class="wf-icon">➕</div>
+      <div class="wf-name">Feature Builder</div>
+      <div class="wf-desc">Agrega una feature incremental. 9 fases delta.</div>
+    </div>
+    <div class="wf-btn" onclick="switchWF('bugfix',this)">
+      <div class="wf-icon">🐛</div>
+      <div class="wf-name">Bug Fixer</div>
+      <div class="wf-desc">Diagnostica y repara bugs. 6 pasos quirúrgicos.</div>
+    </div>
+  </div>
+
+  <!-- ── FASTMVP PIPELINE ── -->
+  <div class="wf-panel wf-visible" id="wf-fastmvp">
+    <div class="orch a a3">
+      <div><div class="orch-lbl">Orquestador · MVP completo</div><div class="orch-title">FastMVP</div></div>
+      <div class="orch-desc">De idea a MVP shippable. Ejecuta 8 fases en orden, delegando a subagentes especializados.</div>
+    </div>
+    <div class="stack a a4">
+      <div class="prow" onclick="openM('fm1')">
+        <div class="plabel p1-l"><div class="pnum">PHASE 01</div><div class="pname">Specification</div><div class="pcmd">Specifier</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#fbbf24;color:var(--p1c);background:var(--p1bg)">📋 Specifier</span></div><div class="outpill">📄 docs/spec.md</div></div>
+      </div>
+      <div class="prow" onclick="openM('fm2')">
+        <div class="plabel p2-l"><div class="pnum">PHASE 02</div><div class="pname">Contracts</div><div class="pcmd">Contract</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#93c5fd;color:var(--p2c);background:var(--p2bg)">📜 Contract</span></div><div class="outpill">📁 contracts/*</div></div>
+      </div>
+      <div class="prow" onclick="openM('fm3')">
+        <div class="plabel p3-l"><div class="pnum">PHASE 03</div><div class="pname">Planning & Design</div><div class="pcmd">Parallel</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#86efac;color:var(--p3c);background:var(--p3bg)">📋 API Planner</span><span class="chip" style="border-color:#86efac;color:var(--p3c);background:var(--p3bg)">🎨 Designer</span><span class="parallel-badge">⚡ PARALLEL</span></div><div class="outpill">📋 tasks + figma</div></div>
+      </div>
+      <div class="prow" onclick="openM('fm4')">
+        <div class="plabel p4-l"><div class="pnum">PHASE 04</div><div class="pname">API Implementation</div><div class="pcmd">API Dev</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#c4b5fd;color:var(--p4c);background:var(--p4bg)">💻 API Dev</span><span class="chip-ghost">per service</span></div><div class="outpill">🚀 apps/api/**</div></div>
+      </div>
+      <div class="prow" onclick="openM('fm5')">
+        <div class="plabel p5-l"><div class="pnum">PHASE 05</div><div class="pname">Web Planning</div><div class="pcmd">Web Planner</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#5eead4;color:var(--p5c);background:var(--p5bg)">📋 Web Planner</span></div><div class="outpill">📄 tasks-web.md</div></div>
+      </div>
+      <div class="prow" onclick="openM('fm6')">
+        <div class="plabel p6-l"><div class="pnum">PHASE 06</div><div class="pname">Web Implementation</div><div class="pcmd">Web Dev</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#fca5a5;color:var(--p6c);background:var(--p6bg)">💻 Web Dev</span></div><div class="outpill">🚀 apps/web/**</div></div>
+      </div>
+      <div class="prow" onclick="openM('fm7')">
+        <div class="plabel p7-l"><div class="pnum">PHASE 07</div><div class="pname">Review</div><div class="pcmd">Reviewer</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#a3e635;color:var(--p7c);background:var(--p7bg)">🔍 Reviewer</span><span class="gate-badge">⛔ GATE</span></div><div class="outpill">✅ alignment report</div></div>
+      </div>
+      <div class="prow" onclick="openM('fm8')">
+        <div class="plabel p8-l"><div class="pnum">PHASE 08</div><div class="pname">Changelog</div><div class="pcmd">FastMVP</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#d4d4d4;color:var(--p8c);background:var(--p8bg)">📝 FastMVP</span></div><div class="outpill">📄 CHANGELOG.md</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FEATURE BUILDER PIPELINE ── -->
+  <div class="wf-panel" id="wf-feature">
+    <div class="orch a">
+      <div><div class="orch-lbl">Orquestador · Feature incremental</div><div class="orch-title">Feature Builder</div></div>
+      <div class="orch-desc">Opera sobre deltas — lee lo existente y solo agrega lo necesario. Nunca reescribe.</div>
+    </div>
+    <div class="stack a">
+      <div class="prow" onclick="openM('fb1')">
+        <div class="plabel p1-l"><div class="pnum">PHASE 01</div><div class="pname">Understand State</div><div class="pcmd">Feature Builder</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#fbbf24;color:var(--p1c);background:var(--p1bg)">🔍 Read existing</span></div><div class="outpill">📖 current state</div></div>
+      </div>
+      <div class="prow" onclick="openM('fb2')">
+        <div class="plabel p2-l"><div class="pnum">PHASE 02</div><div class="pname">Specify Feature</div><div class="pcmd">Specifier (append)</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#93c5fd;color:var(--p2c);background:var(--p2bg)">📋 Specifier</span></div><div class="outpill">📄 spec.md (appended)</div></div>
+      </div>
+      <div class="prow" onclick="openM('fb3')">
+        <div class="plabel p3-l"><div class="pnum">PHASE 03</div><div class="pname">Update Contracts</div><div class="pcmd">Contract (delta)</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#86efac;color:var(--p3c);background:var(--p3bg)">📜 Contract</span></div><div class="outpill">📁 openapi (updated)</div></div>
+      </div>
+      <div class="prow" onclick="openM('fb4')">
+        <div class="plabel p3-l"><div class="pnum">PHASE 04</div><div class="pname">Plan & Design</div><div class="pcmd">Parallel</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#86efac;color:var(--p3c);background:var(--p3bg)">📋 API Planner</span><span class="chip" style="border-color:#86efac;color:var(--p3c);background:var(--p3bg)">🎨 Designer</span><span class="parallel-badge">⚡ PARALLEL</span></div><div class="outpill">📋 tasks + figma</div></div>
+      </div>
+      <div class="prow" onclick="openM('fb5')">
+        <div class="plabel p4-l"><div class="pnum">PHASE 05</div><div class="pname">API Implementation</div><div class="pcmd">API Dev</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#c4b5fd;color:var(--p4c);background:var(--p4bg)">💻 API Dev</span></div><div class="outpill">🚀 new API code</div></div>
+      </div>
+      <div class="prow" onclick="openM('fb6')">
+        <div class="plabel p5-l"><div class="pnum">PHASE 06</div><div class="pname">Web Planning</div><div class="pcmd">Web Planner</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#5eead4;color:var(--p5c);background:var(--p5bg)">📋 Web Planner</span></div><div class="outpill">📄 tasks-web (appended)</div></div>
+      </div>
+      <div class="prow" onclick="openM('fb7')">
+        <div class="plabel p6-l"><div class="pnum">PHASE 07</div><div class="pname">Web Implementation</div><div class="pcmd">Web Dev</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#fca5a5;color:var(--p6c);background:var(--p6bg)">💻 Web Dev</span></div><div class="outpill">🚀 new UI code</div></div>
+      </div>
+      <div class="prow" onclick="openM('fb8')">
+        <div class="plabel p7-l"><div class="pnum">PHASE 08</div><div class="pname">Review</div><div class="pcmd">Reviewer</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#a3e635;color:var(--p7c);background:var(--p7bg)">🔍 Reviewer</span><span class="gate-badge">⛔ GATE</span></div><div class="outpill">✅ alignment + no drift</div></div>
+      </div>
+      <div class="prow" onclick="openM('fb9')">
+        <div class="plabel p8-l"><div class="pnum">PHASE 09</div><div class="pname">Changelog</div><div class="pcmd">Feature Builder</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#d4d4d4;color:var(--p8c);background:var(--p8bg)">📝 Feature Builder</span></div><div class="outpill">📄 CHANGELOG.md</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── BUG FIXER PIPELINE ── -->
+  <div class="wf-panel" id="wf-bugfix">
+    <div class="orch a">
+      <div><div class="orch-lbl">Orquestador · Diagnóstico y fix</div><div class="orch-title">Bug Fixer</div></div>
+      <div class="orch-desc">Analiza, localiza, clasifica, corrige y valida. Nunca modifica contratos sin aprobación del usuario.</div>
+    </div>
+    <div class="stack a">
+      <div class="prow" onclick="openM('bf1')">
+        <div class="plabel bf-l1"><div class="pnum">STEP 01</div><div class="pname">Understand Bug</div><div class="pcmd">Clarificación</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#fbbf24;color:#b45309;background:#fef3c7">🔍 Analyze report</span></div><div class="outpill">📖 clear diagnosis</div></div>
+      </div>
+      <div class="prow" onclick="openM('bf2')">
+        <div class="plabel bf-l2"><div class="pnum">STEP 02</div><div class="pname">Locate Root Cause</div><div class="pcmd">Code search</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#93c5fd;color:#1d4ed8;background:#dbeafe">🔎 Contracts</span><span class="chip" style="border-color:#93c5fd;color:#1d4ed8;background:#dbeafe">🔎 API code</span><span class="chip" style="border-color:#93c5fd;color:#1d4ed8;background:#dbeafe">🔎 Web code</span></div><div class="outpill">📍 root cause found</div></div>
+      </div>
+      <div class="prow" onclick="openM('bf3')">
+        <div class="plabel bf-l3"><div class="pnum">STEP 03</div><div class="pname">Classify</div><div class="pcmd">Categorización</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#c4b5fd;color:#6d28d9;background:#ede9fe">Contract</span><span class="chip" style="border-color:#c4b5fd;color:#6d28d9;background:#ede9fe">API (TS)</span><span class="chip" style="border-color:#c4b5fd;color:#6d28d9;background:#ede9fe">API (Py)</span><span class="chip" style="border-color:#c4b5fd;color:#6d28d9;background:#ede9fe">Web</span><span class="chip" style="border-color:#c4b5fd;color:#6d28d9;background:#ede9fe">Integration</span></div><div class="outpill">🏷️ bug classified</div></div>
+      </div>
+      <div class="prow" onclick="openM('bf4')">
+        <div class="plabel bf-l4"><div class="pnum">STEP 04</div><div class="pname">Fix</div><div class="pcmd">Direct or delegate</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#fca5a5;color:#b91c1c;background:#fee2e2">🔧 Bug Fixer</span><span class="chip-ghost">or → API Dev / Web Dev</span></div><div class="outpill">🚀 fix applied</div></div>
+      </div>
+      <div class="prow" onclick="openM('bf5')">
+        <div class="plabel bf-l5"><div class="pnum">STEP 05</div><div class="pname">Validate</div><div class="pcmd">Reviewer</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#86efac;color:#15803d;background:#dcfce7">🔍 Reviewer</span></div><div class="outpill">✅ no regressions</div></div>
+      </div>
+      <div class="prow" onclick="openM('bf6')">
+        <div class="plabel bf-l6"><div class="pnum">STEP 06</div><div class="pname">Changelog</div><div class="pcmd">Bug Fixer</div></div>
+        <div class="pbody"><div class="chips"><span class="chip" style="border-color:#d4d4d4;color:#9a958c;background:#f5f5f4">📝 Bug Fixer</span></div><div class="outpill">📄 CHANGELOG.md</div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</section>
+
+<!-- ═══════════════ AGENTS ═══════════════ -->
+<section id="agents">
+<div class="inner">
+  <div class="eyebrow a">Arquitectura multi-agente</div>
+  <h2 class="a a1">Agentes</h2>
+  <p class="lead a a2" style="margin-bottom:36px">3 orquestadores que delegan a 8 workers especializados con skills dinámicas según el stack.</p>
+  <div class="agents-grid a a3">
+
+    <!-- Orchestrators -->
+    <div class="ac" style="border-left:4px solid var(--accent)"><div class="ac-hd"><div class="ac-icon" style="background:var(--accent-bg)">🚀</div><div><div class="ac-name">FastMVP</div><div class="ac-ph">Orquestador · MVP completo</div></div></div><div class="ap"><div class="ap-lbl">Input</div><div class="ap-val">Idea del usuario en texto plano</div></div><div class="ap"><div class="ap-lbl">Delega</div><div class="ap-val">Specifier → Contract → API Planner + Designer → API Dev → Web Planner → Web Dev → Reviewer</div></div><div class="ap"><div class="ap-lbl">Output</div><div class="ap-val" style="color:var(--green)">MVP completo: spec + contracts + API + Web + review</div></div></div>
+
+    <div class="ac" style="border-left:4px solid var(--accent)"><div class="ac-hd"><div class="ac-icon" style="background:var(--accent-bg)">➕</div><div><div class="ac-name">Feature Builder</div><div class="ac-ph">Orquestador · Feature incremental</div></div></div><div class="ap"><div class="ap-lbl">Input</div><div class="ap-val">Descripción de la feature + estado actual del MVP</div></div><div class="ap"><div class="ap-lbl">Delega</div><div class="ap-val">Mismos agentes que FastMVP, pero en modo <strong>append/delta</strong></div></div><div class="ap"><div class="ap-lbl">Regla</div><div class="ap-val">Nunca reescribe — solo agrega o actualiza quirúrgicamente</div></div></div>
+
+    <div class="ac" style="border-left:4px solid var(--accent)"><div class="ac-hd"><div class="ac-icon" style="background:var(--accent-bg)">🐛</div><div><div class="ac-name">Bug Fixer</div><div class="ac-ph">Orquestador · Diagnóstico y fix</div></div></div><div class="ap"><div class="ap-lbl">Input</div><div class="ap-val">Reporte de bug del usuario</div></div><div class="ap"><div class="ap-lbl">Delega</div><div class="ap-val">API Dev (para bugs complejos de API), Web Dev (para bugs complejos de UI), Reviewer (validación)</div></div><div class="ap"><div class="ap-lbl">Regla</div><div class="ap-val">Nunca modifica contracts/openapi*.yaml sin aprobación explícita</div></div></div>
+
+    <!-- Workers -->
+    <div class="ac"><div class="ac-hd"><div class="ac-icon" style="background:var(--amber-bg)">📋</div><div><div class="ac-name">Specifier</div><div class="ac-ph">Worker · Idea → Spec</div></div></div><div class="ap"><div class="ap-lbl">Rol</div><div class="ap-val">Transforma ideas en docs/spec.md canónico. Detecta servicios y plataforma.</div></div><div class="ap"><div class="ap-lbl">Model</div><div class="ap-val">Claude Opus 4.6</div></div><div class="ap"><div class="ap-lbl">Output</div><div class="ap-val" style="color:var(--green)">docs/spec.md (con Open Questions si hay ambigüedad)</div></div></div>
+
+    <div class="ac"><div class="ac-hd"><div class="ac-icon" style="background:var(--blue-bg)">📜</div><div><div class="ac-name">Contract</div><div class="ac-ph">Worker · Spec → OpenAPI + SQL</div></div></div><div class="ap"><div class="ap-lbl">Rol</div><div class="ap-val">Genera contratos OpenAPI 3.1 por servicio + schema SQL opcional.</div></div><div class="ap"><div class="ap-lbl">Model</div><div class="ap-val">Claude Opus 4.6</div></div><div class="ap"><div class="ap-lbl">Output</div><div class="ap-val" style="color:var(--green)">contracts/openapi*.yaml + contracts/db/*.sql</div></div></div>
+
+    <div class="ac"><div class="ac-hd"><div class="ac-icon" style="background:var(--green-bg)">📋</div><div><div class="ac-name">API Planner</div><div class="ac-ph">Worker · Contracts → Tasks</div></div></div><div class="ap"><div class="ap-lbl">Rol</div><div class="ap-val">Genera checklists ejecutables por servicio: 8–20 tareas con checkboxes.</div></div><div class="ap"><div class="ap-lbl">Model</div><div class="ap-val">Gemini 3.1 Pro</div></div><div class="ap"><div class="ap-lbl">Output</div><div class="ap-val" style="color:var(--green)">docs/tasks-api.md (+ tasks-api-{name}.md por servicio extra)</div></div></div>
+
+    <div class="ac"><div class="ac-hd"><div class="ac-icon" style="background:var(--violet-bg)">💻</div><div><div class="ac-name">API Dev</div><div class="ac-ph">Worker · Implementa backend</div></div></div><div class="ap"><div class="ap-lbl">Rol</div><div class="ap-val">Ejecuta el checklist de tareas y produce código Clean/DDD. TS (Fastify) o Python (Flask).</div></div><div class="ap"><div class="ap-lbl">Model</div><div class="ap-val">GPT-5.3-Codex</div></div><div class="ap"><div class="ap-lbl">Regla</div><div class="ap-val">Si endpoint falta en contrato: BLOCKED. Actualiza checkboxes conforme avanza.</div></div></div>
+
+    <div class="ac"><div class="ac-hd"><div class="ac-icon" style="background:var(--amber-bg)">🎨</div><div><div class="ac-name">Designer</div><div class="ac-ph">Worker · Figma prompts</div></div></div><div class="ap"><div class="ap-lbl">Rol</div><div class="ap-val">Genera prompts para Figma Make: un master prompt + prompt por pantalla, alineados a OpenAPI.</div></div><div class="ap"><div class="ap-lbl">Model</div><div class="ap-val">Claude Sonnet 4.5</div></div><div class="ap"><div class="ap-lbl">Output</div><div class="ap-val" style="color:var(--green)">docs/figma.md (screen prompts + data mapping table)</div></div></div>
+
+    <div class="ac"><div class="ac-hd"><div class="ac-icon" style="background:var(--teal-bg)">📋</div><div><div class="ac-name">Web Planner</div><div class="ac-ph">Worker · Contracts → Web Tasks</div></div></div><div class="ap"><div class="ap-lbl">Rol</div><div class="ap-val">Genera checklist FSD para frontend: 10–25 tareas. Alineado a OpenAPI y Figma prompts.</div></div><div class="ap"><div class="ap-lbl">Model</div><div class="ap-val">Claude Opus 4.6</div></div><div class="ap"><div class="ap-lbl">Output</div><div class="ap-val" style="color:var(--green)">docs/tasks-web.md</div></div></div>
+
+    <div class="ac"><div class="ac-hd"><div class="ac-icon" style="background:var(--red-bg)">💻</div><div><div class="ac-name">Web Dev</div><div class="ac-ph">Worker · Implementa frontend</div></div></div><div class="ap"><div class="ap-lbl">Rol</div><div class="ap-val">Ejecuta el checklist web en apps/web/ (Next.js) o apps/mobile/ (Expo). FSD estricto.</div></div><div class="ap"><div class="ap-lbl">Model</div><div class="ap-val">GPT-5.3-Codex</div></div><div class="ap"><div class="ap-lbl">Regla</div><div class="ap-val">Networking solo vía shared/lib/api/*. No fetch/axios en pages/widgets/shared UI.</div></div></div>
+
+    <div class="ac"><div class="ac-hd"><div class="ac-icon" style="background:#ecfccb">🔍</div><div><div class="ac-name">Reviewer</div><div class="ac-ph">Worker · Validación final (read-only)</div></div></div><div class="ap"><div class="ap-lbl">Rol</div><div class="ap-val">Valida: contrato ↔ API, contrato ↔ Web, boundaries DDD/FSD, drift entre servicios.</div></div><div class="ap"><div class="ap-lbl">Model</div><div class="ap-val">GPT-5.3-Codex</div></div><div class="ap"><div class="ap-lbl">Output</div><div class="ap-val" style="color:var(--green)">Review report: ✅ PASS / ⚠️ WARNINGS / ❌ ISSUES FOUND</div></div></div>
+
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ SKILLS ═══════════════ -->
+<section id="skills">
+<div class="inner">
+  <div class="eyebrow a">Conocimiento inyectable</div>
+  <h2 class="a a1">Skills</h2>
+  <p class="lead a a2" style="margin-bottom:32px">4 skills especializadas en .github/skills/ que los agentes cargan dinámicamente según el stack del servicio o la plataforma frontend.</p>
+  <div class="layer-nav a a3" id="lnav"></div>
+  <div id="sout" class="a a4"></div>
+</div>
+</section>
+
+<!-- ═══════════════ ARTIFACTS ═══════════════ -->
+<section id="artifacts">
+<div class="inner">
+  <div class="eyebrow a">Monorepo structure</div>
+  <h2 class="a a1">Artefactos</h2>
+  <p class="lead a a2" style="margin-bottom:32px">Todo lo que produce el sistema de agentes. Cada archivo es input del siguiente paso — trazabilidad completa.</p>
+
+  <div class="ftree a a3">
+    <div><span class="td">contracts/</span><span class="tc">← source of truth</span></div>
+    <div style="padding-left:26px"><span class="tf">openapi.yaml</span><span class="ptag" style="background:var(--p2bg);color:var(--p2c)">P2</span><span class="tc">← main API contract</span></div>
+    <div style="padding-left:26px"><span class="tf">openapi-{service}.yaml</span><span class="ptag" style="background:var(--p2bg);color:var(--p2c)">P2</span><span class="tc">← per additional service</span></div>
+    <div style="padding-left:26px"><span class="td">db/</span></div>
+    <div style="padding-left:52px"><span class="tf">schema.sql</span><span class="ptag" style="background:var(--p2bg);color:var(--p2c)">P2</span></div>
+    <div style="padding-left:52px"><span class="tf">queries/*.sql</span><span class="ptag" style="background:var(--p2bg);color:var(--p2c)">P2</span></div>
+    <div style="padding-left:52px"><span class="tf">seed.sql</span><span class="ptag" style="background:var(--p2bg);color:var(--p2c)">P2</span></div>
+    <div style="padding-left:0;margin-top:12px"><span class="td">docs/</span><span class="tc">← planning artifacts</span></div>
+    <div style="padding-left:26px"><span class="tf">spec.md</span><span class="ptag" style="background:var(--p1bg);color:var(--p1c)">P1</span><span class="tc">← product spec</span></div>
+    <div style="padding-left:26px"><span class="tf">tasks-api.md</span><span class="ptag" style="background:var(--p3bg);color:var(--p3c)">P3</span><span class="tc">← API checklist</span></div>
+    <div style="padding-left:26px"><span class="tf">tasks-api-{service}.md</span><span class="ptag" style="background:var(--p3bg);color:var(--p3c)">P3</span><span class="tc">← per extra service</span></div>
+    <div style="padding-left:26px"><span class="tf">tasks-web.md</span><span class="ptag" style="background:var(--p5bg);color:var(--p5c)">P5</span><span class="tc">← Web checklist</span></div>
+    <div style="padding-left:26px"><span class="tf">figma.md</span><span class="ptag" style="background:var(--p3bg);color:var(--p3c)">P3</span><span class="tc">← Figma Make prompts</span></div>
+    <div style="padding-left:0;margin-top:12px"><span class="td">apps/api/src/</span><span class="tc">← TypeScript backend (Fastify + DDD)</span></div>
+    <div style="padding-left:26px"><span class="td">domain/</span><span class="ptag" style="background:var(--p4bg);color:var(--p4c)">P4</span><span class="tc">← entities, value-objects, policies, errors</span></div>
+    <div style="padding-left:26px"><span class="td">application/</span><span class="ptag" style="background:var(--p4bg);color:var(--p4c)">P4</span><span class="tc">← use-cases, ports, DTOs</span></div>
+    <div style="padding-left:26px"><span class="td">infrastructure/</span><span class="ptag" style="background:var(--p4bg);color:var(--p4c)">P4</span><span class="tc">← postgres, http-clients, config</span></div>
+    <div style="padding-left:26px"><span class="td">interfaces/</span><span class="ptag" style="background:var(--p4bg);color:var(--p4c)">P4</span><span class="tc">← routes, controllers, presenters</span></div>
+    <div style="padding-left:26px"><span class="td">app/</span><span class="tc">← container.ts (DI) + server.ts</span></div>
+    <div style="padding-left:0;margin-top:12px"><span class="td">apps/api-{name}/src/</span><span class="tc">← Python backend (Flask + DDD) — if needed</span></div>
+    <div style="padding-left:26px"><span class="td">domain/ application/ infrastructure/ interfaces/ app/</span><span class="ptag" style="background:var(--p4bg);color:var(--p4c)">P4</span></div>
+    <div style="padding-left:0;margin-top:12px"><span class="td">apps/web/src/</span><span class="tc">← React + Next.js frontend (Feature-Sliced)</span></div>
+    <div style="padding-left:26px"><span class="td">app/</span><span class="ptag" style="background:var(--p6bg);color:var(--p6c)">P6</span><span class="tc">← providers, navigation, theme, routes</span></div>
+    <div style="padding-left:26px"><span class="td">pages/</span><span class="ptag" style="background:var(--p6bg);color:var(--p6c)">P6</span><span class="tc">← screens composing widgets/features</span></div>
+    <div style="padding-left:26px"><span class="td">widgets/</span><span class="ptag" style="background:var(--p6bg);color:var(--p6c)">P6</span><span class="tc">← large UI blocks</span></div>
+    <div style="padding-left:26px"><span class="td">features/</span><span class="ptag" style="background:var(--p6bg);color:var(--p6c)">P6</span><span class="tc">← user actions, API calls</span></div>
+    <div style="padding-left:26px"><span class="td">entities/</span><span class="ptag" style="background:var(--p6bg);color:var(--p6c)">P6</span><span class="tc">← business entity types + storage</span></div>
+    <div style="padding-left:26px"><span class="td">shared/</span><span class="ptag" style="background:var(--p6bg);color:var(--p6c)">P6</span><span class="tc">← UI kit, api client, hooks, config</span></div>
+    <div style="padding-left:0;margin-top:12px"><span class="tf">CHANGELOG.md</span><span class="ptag" style="background:var(--p8bg);color:var(--p8c)">P8</span><span class="tc">← build/feature/fix history</span></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:28px" class="a a4">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:26px;text-align:center;box-shadow:var(--sh)">
+      <div style="font-family:'Instrument Serif',serif;font-size:52px;line-height:1;margin-bottom:8px;color:var(--accent)">8</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">FastMVP Phases</div>
+      <div style="font-size:16px;font-weight:600;color:var(--ink)">Idea → MVP</div>
+      <div style="font-size:14px;color:var(--muted)">Full pipeline</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:26px;text-align:center;box-shadow:var(--sh)">
+      <div style="font-family:'Instrument Serif',serif;font-size:52px;line-height:1;margin-bottom:8px;color:var(--green)">11</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Total Agents</div>
+      <div style="font-size:16px;font-weight:600;color:var(--ink)">3 Orchestrators</div>
+      <div style="font-size:14px;color:var(--muted)">+ 8 Workers</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:26px;text-align:center;box-shadow:var(--sh)">
+      <div style="font-family:'Instrument Serif',serif;font-size:52px;line-height:1;margin-bottom:8px;color:var(--violet)">4</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Dynamic Skills</div>
+      <div style="font-size:16px;font-weight:600;color:var(--ink)">TS · Python · Web · Mobile</div>
+      <div style="font-size:14px;color:var(--muted)">Loaded per context</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- MODAL -->
+<div class="overlay" id="ov" onclick="bgClose(event)">
+  <div class="modal" id="mb"></div>
+</div>
+
+<script>
+// NAV
+function go(id,btn){
+  document.querySelectorAll('section').forEach(s=>s.classList.remove('visible'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('visible');
+  btn.classList.add('active');
+  if(id==='skills') initSk();
+}
+
+// WORKFLOW SWITCHER
+function switchWF(id,btn){
+  document.querySelectorAll('.wf-panel').forEach(p=>p.classList.remove('wf-visible'));
+  document.querySelectorAll('.wf-btn').forEach(b=>b.classList.remove('wf-active'));
+  document.getElementById('wf-'+id).classList.add('wf-visible');
+  btn.classList.add('wf-active');
+}
+
+// MODAL DATA
+const PD={
+  // ═══ FASTMVP MODALS ═══
+  fm1:{c:'#b45309',bg:'#fef3c7',br:'#fbbf24',badge:'FastMVP · Phase 1',title:'Specifier',cmd:'Specifier Agent (Claude Opus 4.6)',
+    obj:'Transforma la idea del usuario en un <strong>docs/spec.md</strong> canónico. Detecta qué servicios backend se requieren y qué plataforma frontend usar. Si hay ambigüedad, genera Open Questions bloqueantes.',
+    flow:['El usuario describe su idea en texto plano al FastMVP orchestrator.','FastMVP lanza el <strong>Specifier</strong> como subagente.','El Specifier analiza la idea: plataforma (web/mobile/both) y servicios necesarios.','Si hace falta info, genera <code>## Open questions (blocking)</code> con preguntas múltiple-opción (máx 8).','FastMVP presenta las preguntas al usuario y espera respuestas.','Con las respuestas, re-ejecuta el Specifier hasta que no haya preguntas bloqueantes.','Genera <code>docs/spec.md</code> con: scope, user flows, screens, data model, API needs, acceptance criteria.'],
+    extra:`<div style="margin-bottom:24px"><div class="mlabel">Secciones de docs/spec.md</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${['One-liner','Target user','Platform (web/mobile/both)','Services table','MVP scope','Out of scope','User flows','Screens','Data model','API needs','Non-functional reqs','Acceptance criteria'].map((q,i)=>`<div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:11px 14px;font-size:14px"><span style="font-family:'DM Mono',monospace;font-size:11px;color:#b45309;margin-right:6px">${String(i+1).padStart(2,'0')}.</span>${q}</div>`).join('')}</div></div>`,
+    out:'📄 docs/spec.md'},
+  fm2:{c:'#1d4ed8',bg:'#dbeafe',br:'#93c5fd',badge:'FastMVP · Phase 2',title:'Contract Generator',cmd:'Contract Agent (Claude Opus 4.6)',
+    obj:'Convierte el spec en <strong>contratos OpenAPI 3.1</strong> por cada servicio backend + archivos SQL opcionales para la base de datos.',
+    flow:['Lee <code>docs/spec.md</code> → identifica servicios desde <code>## Services</code>.','Genera <code>contracts/openapi.yaml</code> para el servicio principal (TypeScript/Fastify).','Si hay servicios adicionales (Python/Flask), genera <code>contracts/openapi-{service}.yaml</code>.','Si el spec requiere persistencia, genera SQL en <code>contracts/db/</code>.','Self-check: verifica que todo endpoint del spec existe, que schemas son consistentes, que error responses son reusables.'],
+    extra:`<div style="margin-bottom:24px"><div class="mlabel">Outputs por tipo de servicio</div><table class="mtable"><tr><th>Servicio</th><th>Contract</th><th>DB</th></tr><tr><td style="font-family:'DM Mono',monospace;font-size:13px;color:#1d4ed8">api (TypeScript)</td><td>contracts/openapi.yaml</td><td rowspan="2">contracts/db/schema.sql<br>contracts/db/queries/*.sql<br>contracts/db/seed.sql</td></tr><tr><td style="font-family:'DM Mono',monospace;font-size:13px;color:#1d4ed8">api-{name} (Python)</td><td>contracts/openapi-{name}.yaml</td></tr></table></div>`,
+    out:'📁 contracts/openapi*.yaml + contracts/db/*.sql'},
+  fm3:{c:'#15803d',bg:'#dcfce7',br:'#86efac',badge:'FastMVP · Phase 3',title:'API Planner + Designer',cmd:'Parallel execution',
+    obj:'Ejecuta <strong>en paralelo</strong>: el API Planner genera checklists de tareas por servicio, mientras el Designer produce prompts para Figma Make.',
+    flow:['FastMVP lanza en paralelo: <strong>API Planner</strong> + <strong>Designer</strong>.','<strong>API Planner</strong> lee spec + contracts → genera <code>docs/tasks-api.md</code> (8–20 tareas con checkboxes).','Si hay múltiples servicios, genera un task file por servicio.','<strong>Designer</strong> lee spec + contracts + brand → genera <code>docs/figma.md</code>.','Figma.md incluye: master prompt, prompt por screen, data mapping table.','El pipeline informa al usuario que puede usar Figma Make con los prompts generados.'],
+    extra:`<div style="margin-bottom:24px"><div class="mlabel">API Planner — Tags de tareas</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:11px 14px;font-size:14px"><strong style="color:#1d4ed8">[CONTRACT]</strong> — Schema alignment</div><div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:11px 14px;font-size:14px"><strong style="color:#1d4ed8">[DB]</strong> — SQL / persistence</div><div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:11px 14px;font-size:14px"><strong style="color:#1d4ed8">[API]</strong> — Routes, controllers, use-cases</div><div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:11px 14px;font-size:14px"><strong style="color:#1d4ed8">[INFRA]</strong> — Config, DI wiring</div></div></div>`,
+    out:'📋 docs/tasks-api*.md + docs/figma.md'},
+  fm4:{c:'#6d28d9',bg:'#ede9fe',br:'#c4b5fd',badge:'FastMVP · Phase 4',title:'API Dev',cmd:'API Dev Agent (GPT-5.3-Codex)',
+    obj:'Ejecuta el checklist de tareas y produce código <strong>Clean Architecture + DDD</strong> en el backend. Soporta TypeScript (Fastify) y Python (Flask).',
+    flow:['Lee el task file del servicio target (<code>docs/tasks-api.md</code> o <code>docs/tasks-{service}.md</code>).','Ejecuta tareas en orden: domain → application → infrastructure → interfaces → DI wiring.','Implementa exactamente lo que define el contrato OpenAPI — nada más, nada menos.','Actualiza checkboxes: <code>- [ ]</code> → <code>- [x]</code> conforme completa.','Si necesita un endpoint que no está en el contrato: <strong>BLOCKED</strong>.','Si hay múltiples servicios, FastMVP ejecuta este paso una vez por servicio.'],
+    extra:`<div style="margin-bottom:24px"><div class="mlabel">Layout por stack</div><table class="mtable"><tr><th>Stack</th><th>Layout (DDD layers)</th></tr><tr><td style="font-family:'DM Mono',monospace;font-size:13px;color:#6d28d9">TypeScript</td><td style="font-size:14px;font-family:'DM Mono',monospace">apps/api/src/{domain,application,infrastructure,interfaces,app}/</td></tr><tr><td style="font-family:'DM Mono',monospace;font-size:13px;color:#6d28d9">Python</td><td style="font-size:14px;font-family:'DM Mono',monospace">apps/api-{name}/src/{domain,application,infrastructure,interfaces,app}/</td></tr></table></div><div style="margin-bottom:24px"><div class="mlabel">Reglas de dependencia</div><div style="display:flex;flex-direction:column;gap:8px"><div style="background:#ede9fe;border:1px solid #c4b5fd;border-radius:10px;padding:14px 18px;font-size:14px"><strong style="color:#6d28d9">domain/</strong> — Puro. Sin framework, BD, env ni IO.</div><div style="background:#ede9fe;border:1px solid #c4b5fd;border-radius:10px;padding:14px 18px;font-size:14px"><strong style="color:#6d28d9">application/</strong> — Solo domain + ports. Nunca importa infrastructure.</div><div style="background:#ede9fe;border:1px solid #c4b5fd;border-radius:10px;padding:14px 18px;font-size:14px"><strong style="color:#6d28d9">infrastructure/</strong> — Implementa ports. Puede importar librerías.</div><div style="background:#ede9fe;border:1px solid #c4b5fd;border-radius:10px;padding:14px 18px;font-size:14px"><strong style="color:#6d28d9">interfaces/</strong> — Mapea I/O. Sin business logic.</div></div></div>`,
+    out:'🚀 apps/api/** (o apps/api-{name}/**)'},
+  fm5:{c:'#0f766e',bg:'#ccfbf1',br:'#5eead4',badge:'FastMVP · Phase 5',title:'Web Planner',cmd:'Web Planner Agent (Claude Opus 4.6)',
+    obj:'Genera un checklist ejecutable para el frontend (10–25 tareas) alineado con el contrato OpenAPI, la estructura Feature-Sliced y los prompts de Figma.',
+    flow:['Lee <code>docs/spec.md</code> → detecta plataforma: web (Next.js) o mobile (Expo).','Lee <code>contracts/openapi.yaml</code> (+ contratos adicionales si hay múltiples APIs).','Lee <code>docs/figma.md</code> si existe (screen list + data mapping).','Genera <code>docs/tasks-web.md</code> con tareas agrupadas: [CONTRACT] → [INFRA] → [UI] → [WEB].','Cada tarea referencia file paths concretos dentro de la estructura FSD.'],
+    extra:`<div style="margin-bottom:24px"><div class="mlabel">Feature-Sliced layers</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="background:#ccfbf1;border:1px solid #5eead4;border-radius:8px;padding:11px 14px;font-size:14px"><strong style="color:#0f766e">app/</strong> — Bootstrap, providers, theme</div><div style="background:#ccfbf1;border:1px solid #5eead4;border-radius:8px;padding:11px 14px;font-size:14px"><strong style="color:#0f766e">pages/</strong> — Screens (routing)</div><div style="background:#ccfbf1;border:1px solid #5eead4;border-radius:8px;padding:11px 14px;font-size:14px"><strong style="color:#0f766e">widgets/</strong> — Large UI blocks</div><div style="background:#ccfbf1;border:1px solid #5eead4;border-radius:8px;padding:11px 14px;font-size:14px"><strong style="color:#0f766e">features/</strong> — User actions + API calls</div><div style="background:#ccfbf1;border:1px solid #5eead4;border-radius:8px;padding:11px 14px;font-size:14px"><strong style="color:#0f766e">entities/</strong> — Business entity types</div><div style="background:#ccfbf1;border:1px solid #5eead4;border-radius:8px;padding:11px 14px;font-size:14px"><strong style="color:#0f766e">shared/</strong> — UI kit, api client, hooks</div></div></div>`,
+    out:'📄 docs/tasks-web.md'},
+  fm6:{c:'#b91c1c',bg:'#fee2e2',br:'#fca5a5',badge:'FastMVP · Phase 6',title:'Web Dev',cmd:'Web Dev Agent (GPT-5.3-Codex)',
+    obj:'Ejecuta el checklist de tareas web y produce código frontend con <strong>Feature-Sliced Design</strong>. Soporta Next.js (web) y React Native Expo (mobile).',
+    flow:['Lee <code>docs/tasks-web.md</code> y ejecuta tareas en orden.','Lee <code>docs/spec.md</code> → <code>## Platform</code> para determinar el stack.','Configura API client en <code>shared/lib/api/</code> con base URLs por servicio.','Implementa: theme/tokens → shared/ui → entities → features → widgets → pages.','Todo networking pasa por <code>shared/lib/api/*</code>. No fetch directo en UI.','Actualiza checkboxes conforme completa. BLOCKED si falta un endpoint.'],
+    extra:`<div style="margin-bottom:24px"><div class="mlabel">Plataformas soportadas</div><table class="mtable"><tr><th>Plataforma</th><th>Stack</th><th>Directorio</th></tr><tr><td style="font-weight:600">web (default)</td><td>React + Next.js App Router</td><td style="font-family:'DM Mono',monospace;font-size:13px">apps/web/</td></tr><tr><td style="font-weight:600">mobile</td><td>React Native + Expo</td><td style="font-family:'DM Mono',monospace;font-size:13px">apps/mobile/</td></tr><tr><td style="font-weight:600">both</td><td>Ambos stacks, API compartida</td><td style="font-family:'DM Mono',monospace;font-size:13px">apps/web/ + apps/mobile/</td></tr></table></div>`,
+    out:'🚀 apps/web/** (o apps/mobile/**)'},
+  fm7:{c:'#4d7c0f',bg:'#ecfccb',br:'#a3e635',badge:'FastMVP · Phase 7',title:'Reviewer',cmd:'Reviewer Agent (GPT-5.3-Codex)',
+    obj:'⛔ Gate final. Valida que el código implementado <strong>está alineado con los contratos OpenAPI</strong>, que las boundaries arquitectónicas se respetan y que no hay drift.',
+    flow:['Lee todos los <code>contracts/openapi*.yaml</code>.','Por cada servicio: verifica que every endpoint tiene una ruta implementada.','Verifica request/response shapes, status codes, error responses.','Verifica que el frontend usa <code>shared/lib/api/*</code> para networking.','Verifica boundaries: domain sin framework, application sin infrastructure, FSD layers.','Genera report: <strong>✅ PASS</strong>, <strong>⚠️ WARNINGS</strong>, o <strong>❌ ISSUES FOUND</strong>.'],
+    extra:`<div style="margin-bottom:24px"><div class="mlabel">Checklist del Reviewer</div><div style="display:flex;flex-direction:column;gap:8px"><div style="background:#ecfccb;border:1px solid #a3e635;border-radius:10px;padding:14px 18px;font-size:14px"><strong style="color:#4d7c0f">Contract ↔ API</strong> — Endpoints, schemas, status codes match per service</div><div style="background:#ecfccb;border:1px solid #a3e635;border-radius:10px;padding:14px 18px;font-size:14px"><strong style="color:#4d7c0f">Contract ↔ Web</strong> — API calls via shared client, correct shapes and base URLs</div><div style="background:#ecfccb;border:1px solid #a3e635;border-radius:10px;padding:14px 18px;font-size:14px"><strong style="color:#4d7c0f">DDD Boundaries</strong> — domain/ clean, application/ no infra imports, DI only in container</div><div style="background:#ecfccb;border:1px solid #a3e635;border-radius:10px;padding:14px 18px;font-size:14px"><strong style="color:#4d7c0f">FSD Boundaries</strong> — No fetching in pages/widgets/shared. Tokens used consistently.</div><div style="background:#ecfccb;border:1px solid #a3e635;border-radius:10px;padding:14px 18px;font-size:14px"><strong style="color:#4d7c0f">Contract Completeness</strong> — No orphaned endpoints. No missing endpoints.</div></div></div>`,
+    out:'✅ / ❌ Review Report'},
+  fm8:{c:'#9a958c',bg:'#f5f5f4',br:'#d4d4d4',badge:'FastMVP · Phase 8',title:'Changelog',cmd:'FastMVP Orchestrator',
+    obj:'Inicializa <code>CHANGELOG.md</code> con la primera entrada describiendo el MVP creado. Incluye fecha y resumen.',
+    flow:['FastMVP crea <code>CHANGELOG.md</code> con la entrada del MVP inicial.','Resume: qué se construyó, plataforma, servicios, endpoints principales.','Después de esta fase, aparecen botones de handoff: <strong>[Add a Feature]</strong> y <strong>[Fix a Bug]</strong>.'],
+    extra:'',
+    out:'📄 CHANGELOG.md'},
+
+  // ═══ FEATURE BUILDER MODALS ═══
+  fb1:{c:'#b45309',bg:'#fef3c7',br:'#fbbf24',badge:'Feature Builder · Phase 1',title:'Understand Current State',cmd:'Feature Builder (self)',
+    obj:'Lee el estado actual del proyecto: spec, contratos, tareas existentes. No delega — el Feature Builder lo hace directamente.',
+    flow:['Lee <code>docs/spec.md</code> → identifica servicios y plataforma.','Lee todos los <code>contracts/openapi*.yaml</code>.','Lee <code>docs/tasks-api*.md</code> y <code>docs/tasks-web.md</code> existentes.','Resume al usuario: servicios, stacks, plataforma frontend actual.'],
+    extra:`<div style="margin-bottom:24px"><div class="mlabel">Archivos que lee</div><div style="display:flex;flex-direction:column;gap:8px"><div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px 18px;font-size:14px"><code>docs/spec.md</code> — Spec actual (## Services, ## Platform)</div><div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px 18px;font-size:14px"><code>contracts/openapi*.yaml</code> — Contratos de todos los servicios</div><div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px 18px;font-size:14px"><code>docs/tasks-api*.md</code> — Checklists API (para ver qué ya se hizo)</div><div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px 18px;font-size:14px"><code>docs/tasks-web.md</code> — Checklist web existente</div></div></div>`,
+    out:'📖 Resumen del estado actual al usuario'},
+  fb2:{c:'#1d4ed8',bg:'#dbeafe',br:'#93c5fd',badge:'Feature Builder · Phase 2',title:'Specify Feature',cmd:'Specifier Agent (append mode)',
+    obj:'Ejecuta el Specifier en <strong>modo incremental</strong>: agrega <code>## Feature: &lt;name&gt;</code> al spec existente sin reescribir secciones anteriores.',
+    flow:['Feature Builder lanza el <strong>Specifier</strong> con instrucciones de append.','El Specifier lee <code>docs/spec.md</code> actual.','Agrega <code>## Feature: &lt;name&gt;</code> con scope, flows, screens, data model changes, API needs, acceptance criteria.','Si hay preguntas bloqueantes, Feature Builder las presenta al usuario.','Loop hasta que no haya preguntas. Nunca reescribe secciones existentes del spec.'],
+    extra:'',
+    out:'📄 docs/spec.md (con nueva sección ## Feature)'},
+  fb3:{c:'#15803d',bg:'#dcfce7',br:'#86efac',badge:'Feature Builder · Phase 3',title:'Update Contracts',cmd:'Contract Agent (delta mode)',
+    obj:'El Contract agent lee los contratos existentes y <strong>agrega</strong> los nuevos endpoints/schemas requeridos. Nunca elimina ni modifica lo existente (salvo que la feature lo requiera explícitamente).',
+    flow:['Feature Builder lanza el <strong>Contract</strong> con instrucciones de delta.','Contract lee todos los <code>contracts/openapi*.yaml</code> existentes.','Agrega nuevos endpoints y schemas al contrato del servicio correcto.','Si la feature necesita un nuevo servicio, crea <code>contracts/openapi-{service}.yaml</code>.','Si hay cambios de DB, crea un archivo SQL incremental (ej: <code>003_add_feature.sql</code>).'],
+    extra:`<div style="margin-bottom:24px"><div class="mlabel">Reglas del modo delta</div><div style="display:flex;flex-direction:column;gap:8px"><div style="background:#dcfce7;border:1px solid #86efac;border-radius:10px;padding:14px 18px;font-size:14px"><strong style="color:#15803d">Add only</strong> — No eliminar endpoints/schemas existentes</div><div style="background:#dcfce7;border:1px solid #86efac;border-radius:10px;padding:14px 18px;font-size:14px"><strong style="color:#15803d">Breaking changes</strong> — Si modifica un endpoint existente, nota explícita</div><div style="background:#dcfce7;border:1px solid #86efac;border-radius:10px;padding:14px 18px;font-size:14px"><strong style="color:#15803d">DB incremental</strong> — No modifica SQL existente. Nuevo archivo ALTER TABLE</div></div></div>`,
+    out:'📁 contracts/openapi*.yaml (updated)'},
+  fb4:{c:'#15803d',bg:'#dcfce7',br:'#86efac',badge:'Feature Builder · Phase 4',title:'Plan & Design (Parallel)',cmd:'API Planner + Designer (parallel, append)',
+    obj:'En paralelo: API Planner agrega tareas bajo <code>## Feature: &lt;name&gt;</code> y Designer agrega screen prompts. Ambos en modo append.',
+    flow:['Feature Builder lanza en paralelo: <strong>API Planner</strong> + <strong>Designer</strong>, ambos en modo incremental.','API Planner appends tareas a <code>docs/tasks-api*.md</code> bajo la nueva sección de feature.','Designer appends screen prompts a <code>docs/figma.md</code> bajo la nueva sección.'],
+    extra:'',
+    out:'📋 tasks + figma.md (appended)'},
+  fb5:{c:'#6d28d9',bg:'#ede9fe',br:'#c4b5fd',badge:'Feature Builder · Phase 5',title:'API Implementation',cmd:'API Dev Agent (feature tasks only)',
+    obj:'Ejecuta solo las tareas nuevas de la feature en el backend. Respeta el código existente.',
+    flow:['API Dev lee el task file del servicio afectado.','Ejecuta solo tareas de <code>## Feature: &lt;name&gt;</code>.','Implementa vertical slices: domain → application → infrastructure → interfaces → DI.','Actualiza checkboxes conforme completa.'],
+    extra:'',
+    out:'🚀 New API code added'},
+  fb6:{c:'#0f766e',bg:'#ccfbf1',br:'#5eead4',badge:'Feature Builder · Phase 6',title:'Web Planning',cmd:'Web Planner Agent (append mode)',
+    obj:'Genera tareas web incrementales bajo <code>## Feature: &lt;name&gt;</code> en <code>docs/tasks-web.md</code>.',
+    flow:['Web Planner lee spec, contracts, figma.','Appends tareas al task file web existente.'],
+    extra:'',
+    out:'📄 docs/tasks-web.md (appended)'},
+  fb7:{c:'#b91c1c',bg:'#fee2e2',br:'#fca5a5',badge:'Feature Builder · Phase 7',title:'Web Implementation',cmd:'Web Dev Agent (feature tasks only)',
+    obj:'Ejecuta solo las tareas web de la nueva feature.',
+    flow:['Web Dev lee <code>docs/tasks-web.md</code> → ejecuta tareas de la feature.','Implementa componentes FSD, API calls, UI nuevos.','Actualiza checkboxes.'],
+    extra:'',
+    out:'🚀 New UI code added'},
+  fb8:{c:'#4d7c0f',bg:'#ecfccb',br:'#a3e635',badge:'Feature Builder · Phase 8',title:'Review',cmd:'Reviewer Agent',
+    obj:'Valida que la nueva feature está alineada con contratos y que <strong>no rompe funcionalidad existente</strong>. Verifica: no contract drift en endpoints pre-existentes.',
+    flow:['Reviewer valida: nueva feature alineada con contratos.','Verifica: funcionalidad existente no rota.','Verifica: no drift en endpoints pre-existentes.','Report: PASS, WARNINGS, o ISSUES.'],
+    extra:'',
+    out:'✅ / ❌ Review Report'},
+  fb9:{c:'#9a958c',bg:'#f5f5f4',br:'#d4d4d4',badge:'Feature Builder · Phase 9',title:'Changelog',cmd:'Feature Builder',
+    obj:'Agrega entrada al <code>CHANGELOG.md</code> describiendo la feature añadida, con fecha y resumen de cambios en API, Web y contracts.',
+    flow:['Feature Builder agrega nueva entrada al CHANGELOG.','Incluye: fecha, descripción de la feature, cambios en API/Web/contracts.'],
+    extra:'',
+    out:'📄 CHANGELOG.md (updated)'},
+
+  // ═══ BUG FIXER MODALS ═══
+  bf1:{c:'#b45309',bg:'#fef3c7',br:'#fbbf24',badge:'Bug Fixer · Step 1',title:'Understand the Bug',cmd:'Bug Fixer (self)',
+    obj:'Lee el reporte del usuario. Si es ambiguo o incompleto, hace máximo <strong>3 preguntas de clarificación</strong> con opciones múltiples. Si es claro, avanza directo.',
+    flow:['Lee la descripción del bug del usuario.','Evalúa si tiene suficiente información para diagnosticar.','Si falta info: genera máx 3 preguntas (expected vs actual, screen/endpoint, steps to reproduce).','Preguntas incluyen opciones múltiples cuando es posible.','Espera respuestas antes de avanzar a Step 2.','Si el reporte es claro → avanza directamente.'],
+    extra:`<div style="margin-bottom:24px"><div class="mlabel">Preguntas típicas</div><div style="display:flex;flex-direction:column;gap:8px"><div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px 18px;font-size:14px">¿Cuál es el <strong>comportamiento esperado</strong> vs. el actual?</div><div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px 18px;font-size:14px">¿Qué <strong>pantalla/endpoint/flujo</strong> está afectado?</div><div style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:14px 18px;font-size:14px">Pasos para <strong>reproducir</strong> (si no fueron proporcionados)</div></div></div>`,
+    out:'📖 Bug claramente entendido'},
+  bf2:{c:'#1d4ed8',bg:'#dbeafe',br:'#93c5fd',badge:'Bug Fixer · Step 2',title:'Locate Root Cause',cmd:'Code search + contract check',
+    obj:'Busca el root cause del bug cruzando contratos, código API y código frontend. Identifica mismatches entre capas.',
+    flow:['Revisa el contrato apropiado: <code>contracts/openapi.yaml</code> o <code>contracts/openapi-{service}.yaml</code>.','Revisa implementación API: routes, controllers, use-cases, repos.','Revisa implementación Web/Mobile: features, api client, pages.','Busca mismatches entre capas o entre contratos de servicios.'],
+    extra:`<div style="margin-bottom:24px"><div class="mlabel">Dónde busca por tipo de servicio</div><table class="mtable"><tr><th>Layer</th><th>TypeScript (apps/api/)</th><th>Python (apps/api-{name}/)</th></tr><tr><td>Routes</td><td>interfaces/http/routes/</td><td>interfaces/http/blueprints/</td></tr><tr><td>Controllers</td><td>interfaces/http/controllers/</td><td>interfaces/http/controllers/</td></tr><tr><td>Use-cases</td><td>application/use-cases/</td><td>application/use_cases/</td></tr><tr><td>Repos</td><td>infrastructure/persistence/</td><td>infrastructure/persistence/</td></tr></table></div>`,
+    out:'📍 Root cause localizado'},
+  bf3:{c:'#6d28d9',bg:'#ede9fe',br:'#c4b5fd',badge:'Bug Fixer · Step 3',title:'Classify the Bug',cmd:'Categorización automática',
+    obj:'Clasifica el bug en una de 5 categorías para determinar la estrategia de fix y si necesita delegación.',
+    flow:['Analiza el root cause encontrado.','Clasifica en una de las 5 categorías.','La categoría determina la acción: fix directo, delegación, o reporte al usuario (contract bugs).'],
+    extra:`<div style="margin-bottom:24px"><div class="mlabel">Categorías de bugs</div><table class="mtable"><tr><th>Tipo</th><th>Descripción</th><th>Acción</th></tr><tr><td style="font-weight:700;color:#6d28d9">Contract bug</td><td>Mismatch entre openapi*.yaml e implementación</td><td>Reporta al usuario (contract changes = decisiones manuales)</td></tr><tr><td style="font-weight:700;color:#6d28d9">API bug (TS)</td><td>Issue en apps/api/**</td><td>Fix directo o delega a API Dev</td></tr><tr><td style="font-weight:700;color:#6d28d9">API bug (Py)</td><td>Issue en apps/api-{name}/**</td><td>Fix directo o delega a API Dev</td></tr><tr><td style="font-weight:700;color:#6d28d9">Web bug</td><td>Issue en apps/web/** o apps/mobile/**</td><td>Fix directo o delega a Web Dev</td></tr><tr><td style="font-weight:700;color:#6d28d9">Integration bug</td><td>Servicios no concuerdan entre sí</td><td>Traza hasta los contratos, determina fuente</td></tr></table></div>`,
+    out:'🏷️ Bug clasificado'},
+  bf4:{c:'#b91c1c',bg:'#fee2e2',br:'#fca5a5',badge:'Bug Fixer · Step 4',title:'Fix the Bug',cmd:'Direct fix or delegate',
+    obj:'Para bugs <strong>simples y localizados</strong> (typo, wrong status code, missing field): fix directo. Para bugs <strong>complejos</strong> (logic errors cross-layer): delega a API Dev o Web Dev.',
+    flow:['<strong>Bugs simples</strong>: Bug Fixer edita directamente y verifica que no hay errores de tipo/lint.','<strong>Bugs complejos API</strong>: delega a <strong>API Dev</strong> como subagente con descripción específica del fix.','<strong>Bugs complejos Web</strong>: delega a <strong>Web Dev</strong> como subagente.','<strong>CONTRACT GAP</strong>: Si el bug revela un endpoint/field faltante → reporta <code>CONTRACT GAP: &lt;description&gt;</code>.','Nunca cambia <code>contracts/openapi*.yaml</code> sin aprobación explícita del usuario.'],
+    extra:'',
+    out:'🚀 Fix aplicado'},
+  bf5:{c:'#15803d',bg:'#dcfce7',br:'#86efac',badge:'Bug Fixer · Step 5',title:'Validate',cmd:'Reviewer Agent',
+    obj:'El Reviewer confirma que el fix está alineado con el contrato y que <strong>no se introdujeron regresiones</strong>.',
+    flow:['Bug Fixer lanza el <strong>Reviewer</strong> como subagente.','Reviewer verifica: fix alineado con contratos OpenAPI.','Reviewer verifica: no se introdujeron regresiones.','Report: PASS o ISSUES FOUND.'],
+    extra:'',
+    out:'✅ No regressions'},
+  bf6:{c:'#9a958c',bg:'#f5f5f4',br:'#d4d4d4',badge:'Bug Fixer · Step 6',title:'Changelog',cmd:'Bug Fixer',
+    obj:'Registra el fix en <code>CHANGELOG.md</code> con fecha y resumen del bug corregido.',
+    flow:['Bug Fixer actualiza CHANGELOG.md con nueva entrada.','Incluye: fecha, descripción del bug y del fix aplicado.'],
+    extra:'',
+    out:'📄 CHANGELOG.md (updated)'}
+};
+
+function openM(id){
+  const d=PD[id];
+  document.getElementById('mb').innerHTML=`
+    <button class="mclose" onclick="closeM()">✕</button>
+    <div class="mbadge" style="border-color:${d.br};background:${d.bg};color:${d.c}">${d.badge}</div>
+    <h3>${d.title}</h3>
+    <div class="mcmd">${d.cmd}</div>
+    <div class="mobj">${d.obj}</div>
+    <div style="margin-bottom:24px">
+      <div class="mlabel">Flujo de ejecución</div>
+      <div class="flist">${d.flow.map((s,i)=>`<div class="fitem"><div class="fnum">${String(i+1).padStart(2,'0')}.</div><div class="ftext">${s}</div></div>`).join('')}</div>
+    </div>
+    ${d.extra}
+    <div><div class="mlabel">Output</div><div class="mout">${d.out}</div></div>
+  `;
+  document.getElementById('ov').classList.add('open');
+}
+function closeM(){document.getElementById('ov').classList.remove('open')}
+function bgClose(e){if(e.target===document.getElementById('ov'))closeM()}
+
+// SKILLS DATA
+const SK=[
+  {l:'backend',id:'typescript-api',scope:'apps/api (Fastify)',desc:'DDD + Clean Architecture patterns for TypeScript. Layer templates (domain entities, value objects, use-cases, ports, repos, controllers, presenters), DI wiring, dependency rules, error handling, Postgres via pg.Pool.'},
+  {l:'backend',id:'python-api',scope:'apps/api-{name} (Flask)',desc:'DDD + Clean Architecture patterns for Python. Pydantic DTOs, Protocol interfaces for ports, psycopg2 pool injection, Flask blueprints, ML model loading in infrastructure/ml/.'},
+  {l:'frontend',id:'react-nextjs-web',scope:'apps/web (Next.js)',desc:'Feature-Sliced Design for React + Next.js App Router. Layer templates (pages, widgets, features, entities, shared), API client patterns, theming with tokens, data fetching rules.'},
+  {l:'frontend',id:'react-native-mobile',scope:'apps/mobile (Expo)',desc:'Feature-Sliced Design for React Native + Expo. React Navigation routing, AsyncStorage patterns, touch-optimized UI, same FSD layer boundaries as web.'},
+];
+const LL={backend:'Backend — DDD + Clean Architecture',frontend:'Frontend — Feature-Sliced Design'};
+const LC={backend:'#6d28d9',frontend:'#0f766e'};
+const LAYERS=[{id:'all',label:'All Skills'},{id:'backend',label:'Backend'},{id:'frontend',label:'Frontend'}];
+let curL='all';
+
+function initSk(){
+  const nav=document.getElementById('lnav');
+  if(nav.children.length)return;
+  LAYERS.forEach(lr=>{
+    const b=document.createElement('button');
+    b.className='lbtn'+(lr.id==='all'?' active':'');
+    b.textContent=lr.label;
+    b.onclick=()=>{document.querySelectorAll('.lbtn').forEach(x=>x.classList.remove('active'));b.classList.add('active');curL=lr.id;renderSk()};
+    nav.appendChild(b);
+  });
+  renderSk();
+}
+
+function renderSk(){
+  const layers=curL==='all'?['backend','frontend']:[curL];
+  document.getElementById('sout').innerHTML=layers.map(l=>{
+    const items=SK.filter(s=>s.l===l);
+    return`<div class="lg"><div class="lg-title" style="color:${LC[l]}">${LL[l]}</div><div class="sg">${items.map(s=>`<div class="sk"><div class="sk-id" style="color:${LC[l]}">${s.id}</div><div class="sk-scope">${s.scope}</div><div class="sk-desc">${s.desc}</div></div>`).join('')}</div></div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
