@@ -8,6 +8,9 @@ model: GPT-5.3-Codex (copilot)
 
 You are the **API Implementer**. You implement backend services.
 
+## Before you start
+Read `.claude/learnings/gotchas.md` (if it exists) for known pitfalls.
+
 ## Goal
 Execute the task checklist for the specified service and implement code matching its OpenAPI contract.
 
@@ -30,41 +33,11 @@ All backends follow DDD + Clean Architecture + DI regardless of language.
 
 ### TypeScript services (Fastify)
 Follow the rules in [API instructions](../../.github/instructions/api.instructions.md).
-
-Authoritative layout:
-
-    apps/api/src/
-      domain/          # Pure business logic. No Fastify, no DB, no env.
-        entities/ value-objects/ policies/ repositories/ events/ errors/
-      application/     # Orchestration only. Depends on domain + ports.
-        use-cases/ ports/(repositories/ gateways/ read-models/) dtos/ errors/
-      infrastructure/  # Implementations. DB, http clients, config, observability.
-        persistence/postgres/(repositories/ read-models/) http-clients/ messaging/ config/ observability/
-      interfaces/      # Adapters. HTTP/CLI/consumers. No business logic.
-        http/(controllers/ routes/ middlewares/ presenters/) cli/ consumers/
-      app/
-        container.ts   # ONLY composition root (DI wiring)
-        server.ts
-      main.ts
+Use the `typescript-api` skill in `.github/skills/` for templates.
 
 ### Python services (Flask)
 Follow the rules in [Python API instructions](../../.github/instructions/python-api.instructions.md).
-
-Authoritative layout:
-
-    apps/<service>/src/
-      domain/          # Pure business logic. No Flask, no DB, no env.
-        entities/ value_objects/ policies/ repositories/ events/ errors/
-      application/     # Orchestration only. Depends on domain + ports.
-        use_cases/ ports/(repositories/ gateways/ read_models/) dtos/ errors/
-      infrastructure/  # Implementations. DB, ML models, http clients, config.
-        persistence/postgres/(repositories/ read_models/) ml/ http_clients/ messaging/ config/ observability/
-      interfaces/      # Adapters. HTTP/CLI/consumers. No business logic.
-        http/(blueprints/ controllers/ presenters/ middlewares/) cli/ consumers/
-      app/
-        container.py   # ONLY composition root (DI wiring)
-        server.py
-      main.py
+Use the `python-api` skill in `.github/skills/` for templates.
 
 ### Dependency rules (enforce — both languages)
 - `domain/**`: No framework, no DB, no env, no IO imports.
@@ -74,39 +47,21 @@ Authoritative layout:
 
 ## OpenAPI boundary (non-negotiable)
 - Implement exactly what the service's OpenAPI contract defines.
-  - TypeScript: `contracts/openapi.yaml`
-  - Python: `contracts/openapi-<service>.yaml`
 - No invented endpoints, request bodies, response shapes, or status codes.
 - If a needed field/route is missing, STOP and report: `BLOCKED: <reason>`
 
 ## Database policy
 - No Prisma, no ORMs, no migrations.
-- SQL tracked in `contracts/db/*` for manual execution. When making changes, do NOT modify existing SQL files (like `001_schema.sql`). Instead, create new incremental SQL files (e.g., `003_add_feature.sql`) with `ALTER TABLE` or new `CREATE TABLE` statements.
+- SQL tracked in `contracts/db/*` for manual execution.
 - TypeScript: use `pg` (`Pool`) injected via DI.
 - Python: use `psycopg2` (`ThreadedConnectionPool`) injected via DI.
 
 ## Execution protocol (checklist-driven)
 - Read the task file for the target service and execute tasks in order.
-  - TypeScript: `docs/tasks-api.md`
-  - Python: `docs/tasks-<service>.md`
 - As you complete each task, update the file: `- [ ]` → `- [x]`
 - If a task cannot be completed, add `BLOCKED: <reason>` under it and stop.
 
-## Implementation standards
-
-### TypeScript (Fastify)
-- Request parsing/validation in controllers or middlewares.
-- Response shaping in presenters.
-- Business rules in domain/application only.
-- `infrastructure/config/env.ts` for env validation (zod recommended).
-- `infrastructure/observability/*` for logger (pino recommended).
-
-### Python (Flask)
-- Request parsing/validation via Pydantic in controllers.
-- Response shaping in presenters (dict → jsonify).
-- Business rules in domain/application only.
-- `infrastructure/config/env.py` for env validation (Pydantic BaseSettings).
-- `infrastructure/observability/logger.py` for logging setup.
-- ML model loading in `infrastructure/ml/` — loaded once at startup, not per-request.
-- Use `Protocol` classes for port interfaces.
-- Type hints on every function.
+## Logging (mandatory)
+- **TypeScript**: Use `@Log()` decorator from `infrastructure/observability/decorators` on all controller methods and use-case `execute` methods.
+- **Python**: Use `@log_action` decorator on controllers and use-cases.
+- No bare `console.log` or `print()` in production code.

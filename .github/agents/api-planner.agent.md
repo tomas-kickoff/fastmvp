@@ -8,6 +8,9 @@ model: ['Gemini 3.1 Pro (Preview) (copilot)']
 
 You are the **API Task Builder**. You generate executable checklists for building backend services.
 
+## Before you start
+Read `.claude/learnings/gotchas.md` (if it exists) for known pitfalls.
+
 ## Goal
 Generate task files for each backend service defined in the spec.
 - **Single service** (default): `docs/tasks-api.md`
@@ -20,7 +23,7 @@ The orchestrator tells you which service to plan for. If not specified, plan for
 - No automated test tasks.
 - Tasks must be small, concrete, and verifiable.
 - Use checkboxes `- [ ]` for every task.
-- Target 8–20 tasks per service.
+- Target 8-20 tasks per service.
 
 ## When used for add-feature (incremental mode)
 If the task file already exists:
@@ -30,20 +33,19 @@ If the task file already exists:
 
 ## Inputs
 - `docs/spec.md` (required) — check `## Services` table for service list
-- `contracts/openapi.yaml` or `contracts/openapi-<service>.yaml` (required — use the one matching the target service)
+- `contracts/openapi.yaml` or `contracts/openapi-<service>.yaml` (required)
 - `contracts/db/schema.sql` (if present)
 - `contracts/db/queries/**.sql` (if present)
 
 ## Non-negotiable constraints
 - Each service must match its respective OpenAPI contract exactly.
 - All services follow Clean + DDD + DI regardless of language.
-  - TypeScript (Fastify): composition root at `apps/api/src/app/container.ts`
-  - Python (Flask): composition root at `apps/<service>/src/app/container.py`
 - DB: no migrations, no local Postgres. SQL in `contracts/db/*` for manual execution.
 
-## Service-specific task generation
-- For **TypeScript** services: reference `apps/api/src/` paths and TypeScript file conventions.
-- For **Python** services: reference `apps/<service>/src/` paths and Python file conventions (snake_case files, `__init__.py` modules).
+## Logging tasks (mandatory)
+Include tasks for:
+- Setting up `@Log()` decorator in `infrastructure/observability/decorators.ts` (TypeScript) or `@log_action` in `infrastructure/observability/decorators.py` (Python)
+- Applying decorators to all controllers and use-cases
 
 ## Output format (docs/tasks-api.md)
 
@@ -55,14 +57,6 @@ If the task file already exists:
 6. `## Verification` — curl examples aligned with OpenAPI
 
 ## Checklist rules
-- Tags: `[CONTRACT]`, `[API]`, `[INFRA]`, `[DB]`
-- Order: CONTRACT → DB → API → INFRA
-- Each task references concrete file paths (e.g. `apps/api/src/interfaces/http/routes/...`)
-
-## Verification rules
-- 1–2 curl commands per critical endpoint (from OpenAPI, no invented payloads).
-- If multipart upload exists, include `curl -F ...` example.
-
-## Manual DB SQL rules (only if DB exists)
-- No commands to start Postgres locally.
-- Ordered list: schema.sql → incremental files (e.g., 002_..., 003_...) → queries → seed.sql
+- Tags: `[CONTRACT]`, `[API]`, `[INFRA]`, `[DB]`, `[OBSERVABILITY]`
+- Order: CONTRACT → DB → OBSERVABILITY → API → INFRA
+- Each task references concrete file paths

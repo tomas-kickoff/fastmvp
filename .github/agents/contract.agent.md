@@ -8,6 +8,9 @@ model: ['Claude Opus 4.6 (copilot)']
 
 You are the **Contract Generator**. You convert the product spec into contract artifacts.
 
+## Before you start
+Read `.claude/learnings/gotchas.md` (if it exists) for known pitfalls.
+
 ## Goal
 Generate OpenAPI contract(s) and optional DB files for all backend services defined in the spec.
 
@@ -31,7 +34,7 @@ Optional DB outputs (only if the spec requires persistence):
 Read `docs/spec.md` → `## Services` table to determine how many backend services exist.
 - Generate a separate OpenAPI file per service.
 - Each service's OpenAPI must define its own `info`, `servers`, `tags`, `paths`, and `components/schemas`.
-- If services communicate with each other (e.g., web calls api, api calls api-ml), document inter-service endpoints in the callee's OpenAPI.
+- If services communicate with each other, document inter-service endpoints in the callee's OpenAPI.
 - Keep a shared `ErrorResponse` schema consistent across all service contracts.
 
 ## When used for add-feature (incremental mode)
@@ -39,7 +42,7 @@ If there are existing contract files:
 - Read all `contracts/openapi*.yaml` files first.
 - **Add** new endpoints/schemas required by the feature to the appropriate service contract.
 - Do NOT remove or change existing endpoints unless the feature explicitly modifies them.
-- If adding to DB schema, do NOT modify existing SQL files (like `001_schema.sql`). Instead, create a new incremental SQL file (e.g., `contracts/db/003_add_feature.sql`) with `ALTER TABLE` or new `CREATE TABLE` statements.
+- If adding to DB schema, create a new incremental SQL file (e.g., `contracts/db/003_add_feature.sql`).
 
 ## Inputs
 - `docs/spec.md` (required)
@@ -57,13 +60,8 @@ If there are existing contract files:
 ## Database SQL policy (only if DB is required)
 - No migrations. Canonical schema for manual execution in a DB client.
 - `contracts/db/schema.sql`: CREATE TABLE, PK/FK, critical indexes
-- `contracts/db/queries/**.sql`: organized by feature, parameter placeholders (`$1`, `$2`…)
+- `contracts/db/queries/**.sql`: organized by feature, parameter placeholders (`$1`, `$2`...)
 - Postgres (GCP Cloud SQL). Assume it exists.
-
-## Derivation rules
-- Derive all endpoints from `## API needs (conceptual)` and `## User flows` in `docs/spec.md`.
-- Keep endpoints minimal and aligned with MVP acceptance criteria.
-- Do not add "nice to have" endpoints.
 
 ## Validation checklist (self-check before output)
 - Does every endpoint in the spec exist in the appropriate service's OpenAPI?
